@@ -22,6 +22,7 @@ func _initialize() -> void:
 
 func _run() -> void:
 	_test_damage_and_armor()
+	_test_range_targeting()
 	_test_sniper_targeting()
 	_test_sequential_upgrades()
 	_test_debuff_refresh()
@@ -68,6 +69,24 @@ func _test_sniper_targeting() -> void:
 	armored.take_damage(600.0)
 	target = TargetSelectorScript.choose_highest_current_ehp([ordinary, armored])
 	_expect(target == ordinary, "Sniper ranking must use current, not maximum, health")
+
+
+func _test_range_targeting() -> void:
+	var route: Array[Vector2] = [Vector2.ZERO, Vector2(10.0, 0.0)]
+	var rear: EnemyState = EnemyStateScript.new("rear", 0, {"health": 10.0, "armor": 0.0, "speed": 1.0})
+	var advanced: EnemyState = EnemyStateScript.new("advanced", 1, {"health": 10.0, "armor": 0.0, "speed": 1.0})
+	var out_of_range: EnemyState = EnemyStateScript.new("distant", 2, {"health": 10.0, "armor": 0.0, "speed": 1.0})
+	rear.path_distance = 1.0
+	advanced.path_distance = 3.5
+	out_of_range.path_distance = 7.0
+	var target: Variant = TargetSelectorScript.choose_most_advanced_in_range(
+		[rear, advanced, out_of_range], route, Vector2(0.0, 1.0), 4.0
+	)
+	_expect(target == advanced, "Tower should choose the most advanced enemy whose route position is in range")
+	_expect(
+		TargetSelectorScript.choose_most_advanced_in_range([out_of_range], route, Vector2.ZERO, 2.0) == null,
+		"Tower should not target enemies outside its range"
+	)
 
 
 func _test_sequential_upgrades() -> void:

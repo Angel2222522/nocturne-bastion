@@ -141,6 +141,7 @@ func _fire_towers(delta: float) -> void:
 		while cooldown <= 0.0 and shots_this_step < 8:
 			var target: Variant = TargetSelectorScript.choose_most_advanced_in_range(
 				enemies,
+				route,
 				build_slots[slot_id],
 				float(stats.get("range", 0.0))
 			)
