@@ -103,6 +103,28 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      - name: Verify APK signature and offline package
+        run: |
+          APK="build/PULSE-debug.apk"
+          BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.1"
+          "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee build/apk-signature.txt
+          "$BUILD_TOOLS/aapt" dump badging "$APK" | tee build/apk-metadata.txt
+          "$BUILD_TOOLS/aapt" dump permissions "$APK" | tee -a build/apk-metadata.txt
+          grep -F "package: name='org.pulsegame.prototype' versionCode='1' versionName='0.1.0'" build/apk-metadata.txt
+          if grep -Fq 'android.permission.INTERNET' build/apk-metadata.txt; then
+            echo 'Offline prototype APK unexpectedly requests INTERNET permission.' >&2
+            exit 1
+          fi
+          sha256sum "$APK" | tee build/apk-sha256.txt
+
+      - name: Upload APK verification record
+        uses: actions/upload-artifact@v4
+        with:
+          name: PULSE-apk-verification
+          path: build/apk-*.txt
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v4
         with:
