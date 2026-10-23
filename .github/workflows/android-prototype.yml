@@ -118,6 +118,22 @@ jobs:
           fi
           sha256sum "$APK" | tee build/apk-sha256.txt
 
+      - name: Capture visual preview
+        continue-on-error: true
+        run: |
+          mkdir -p build
+          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --script res://tests/capture_preview.gd
+          test -s build/PULSE-preview.png
+
+      - name: Upload visual preview
+        if: always() && hashFiles('build/PULSE-preview.png') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: PULSE-visual-preview
+          path: build/PULSE-preview.png
+          if-no-files-found: warn
+          retention-days: 7
+
       - name: Upload APK verification record
         uses: actions/upload-artifact@v4
         with:

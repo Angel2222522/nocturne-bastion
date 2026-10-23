@@ -5,11 +5,11 @@ const BoardViewScript = preload("res://visuals/board_view.gd")
 const RegularFont = preload("res://assets/fonts/DejaVuSans.ttf")
 const BoldFont = preload("res://assets/fonts/DejaVuSans-Bold.ttf")
 
-const PANEL: Color = Color("17283e")
-const PANEL_BORDER: Color = Color("314962")
-const ACCENT: Color = Color("74d0bd")
-const GOLD: Color = Color("f1b85b")
-const MUTED: Color = Color("a9bbcc")
+const PANEL: Color = Color("192720")
+const PANEL_BORDER: Color = Color("50634f")
+const ACCENT: Color = Color("78d9bd")
+const GOLD: Color = Color("e9b765")
+const MUTED: Color = Color("c0b99f")
 
 var simulation: BattleSimulation
 var board: BoardView
@@ -46,7 +46,7 @@ func _process(delta: float) -> void:
 
 func _build_interface() -> void:
 	var background: ColorRect = ColorRect.new()
-	background.color = Color("0b1423")
+	background.color = Color("0b120f")
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(background)
 
@@ -60,7 +60,7 @@ func _build_interface() -> void:
 	var title_column: VBoxContainer = VBoxContainer.new()
 	title_column.add_theme_constant_override("separation", 0)
 	header_row.add_child(title_column)
-	var title: Label = _label("PULSE", 25, Color("f1f5f8"), true)
+	var title: Label = _label("PULSE", 25, Color("f3ecd9"), true)
 	title_column.add_child(title)
 	title_column.add_child(_label("ΑΜΥΝΑ ΠΥΡΗΝΑ  /  ΠΡΩΤΟΤΥΠΟ 0.1", 12, MUTED))
 	var spacer: Control = Control.new()
@@ -91,7 +91,7 @@ func _build_interface() -> void:
 	var controls: VBoxContainer = VBoxContainer.new()
 	controls.add_theme_constant_override("separation", 12)
 	margin.add_child(controls)
-	controls.add_child(_label("ΚΕΝΤΡΟ ΔΙΟΙΚΗΣΗΣ", 19, Color("f1f5f8"), true))
+	controls.add_child(_label("ΚΕΝΤΡΟ ΔΙΟΙΚΗΣΗΣ", 19, Color("f3ecd9"), true))
 	controls.add_child(_label("Δοκιμαστικός τομέας 01", 14, MUTED))
 	controls.add_child(_separator())
 	controls.add_child(_label("ΕΠΙΛΕΓΜΕΝΗ ΘΕΣΗ", 12, ACCENT, true))
