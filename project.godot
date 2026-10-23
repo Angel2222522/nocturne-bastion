@@ -1,0 +1,21 @@
+; PULSE: offline 2D strategy prototype for Android.
+config_version=5
+
+[application]
+config/name="PULSE"
+run/main_scene="res://scenes/game.tscn"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+
+[display]
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=720
+window/stretch/mode="canvas_items"
+window/handheld/orientation=1
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/default_filters/use_nearest_mipmap_filter=false
+environment/defaults/default_clear_color=Color(0.0235294, 0.0431373, 0.0784314, 1)

@@ -1,0 +1,17 @@
+{
+  "status": "provisional_prototype_data",
+  "source": "PULSE mathematical model v0.2",
+  "enemies": {
+    "test_raider": {
+      "display_name": "Δοκιμαστικός αντίπαλος",
+      "approved_identity": false,
+      "health": 110.0,
+      "armor": 0.0,
+      "speed": 0.85,
+      "attack_damage": 12.0,
+      "attack_interval": 1.2,
+      "kill_gold": 16,
+      "core_damage": 1
+    }
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "status": "provisional_prototype_data",
+  "initial_gold": 320,
+  "initial_lives": 25,
+  "wave_clear_bonus": 30,
+  "waves": [
+    {
+      "id": "wave_1",
+      "entries": [
+        { "enemy_id": "test_raider", "count": 8, "spawn_interval": 2.65 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,75 @@
+{
+  "status": "provisional_model_v0.2",
+  "damage_rules": {
+    "physical_armor_reduction": true,
+    "magic_ignores_armor": true,
+    "nuclear_ignores_armor": true
+  },
+  "towers": {
+    "rapid": {
+      "display_name": "Ταχυβόλος",
+      "prototype_enabled": true,
+      "levels": [
+        { "purchase_cost": 100, "damage": 8.0, "interval": 0.45, "range": 2.6, "damage_type": "physical", "armor_penetration": 0.0 },
+        { "purchase_cost": 100, "damage": 11.0, "interval": 0.4, "range": 2.6, "damage_type": "physical", "armor_penetration": 0.0 },
+        { "purchase_cost": 170, "damage": 14.0, "interval": 0.35, "range": 2.6, "damage_type": "physical", "armor_penetration": 0.0 }
+      ],
+      "specializations": {
+        "A": { "purchase_cost": 300, "damage": 5.0, "interval": 0.055, "range": 1.55, "damage_type": "physical", "armor_penetration": 0.0, "note": "Ακραία ταχυβολία και μικρότερη εμβέλεια." },
+        "B": { "purchase_cost": 450, "damage": 750.0, "interval": 5.0, "range": 999.0, "damage_type": "physical", "armor_penetration": 0.8, "targeting": "highest_current_ehp", "note": "Παγκόσμιος σκοπευτής· 999 δηλώνει παγκόσμια εμβέλεια." }
+      }
+    },
+    "nuclear": {
+      "display_name": "Πυρηνικός",
+      "prototype_enabled": false,
+      "levels": [
+        { "purchase_cost": 1200, "damage": 360.0, "interval": 15.0, "range": 2.2, "blast_radius": 1.4, "damage_type": "nuclear" },
+        { "purchase_cost": 650, "damage": 420.0, "interval": 15.0, "range": 2.2, "blast_radius": 1.4, "damage_type": "nuclear" },
+        { "purchase_cost": 1100, "damage": 500.0, "interval": 15.0, "range": 2.2, "blast_radius": 1.4, "damage_type": "nuclear" }
+      ],
+      "specializations": {
+        "A": { "purchase_cost": 1900, "damage": 750.0, "interval": 15.0, "range": 6.6, "blast_radius": 1.4, "damage_type": "nuclear" },
+        "B": { "purchase_cost": 2600, "damage": 750.0, "interval": 5.0, "range": 2.2, "blast_radius": 1.4, "global_damage_fraction": 0.1, "damage_type": "nuclear" }
+      }
+    },
+    "barracks": {
+      "display_name": "Στρατώνας",
+      "prototype_enabled": false,
+      "levels": [
+        { "purchase_cost": 200, "soldier_health": 60.0, "soldiers_per_cycle": 2, "production_interval": 11.0, "soldier_damage": 15.0, "attack_interval": 1.0 },
+        { "purchase_cost": 170, "soldier_health": 70.0, "soldiers_per_cycle": 2, "production_interval": 10.0, "soldier_damage": 18.0, "attack_interval": 0.95 },
+        { "purchase_cost": 250, "soldier_health": 85.0, "soldiers_per_cycle": 3, "production_interval": 10.0, "soldier_damage": 20.0, "attack_interval": 0.9 }
+      ],
+      "specializations": {
+        "A": { "purchase_cost": 430, "soldier_health": 85.0, "soldiers_per_cycle": 3, "production_interval": 10.0, "soldier_damage": 60.0, "attack_interval": 0.9 },
+        "B": { "purchase_cost": 350, "soldier_health": 85.0, "soldiers_per_cycle": 3, "production_interval": 10.0, "soldier_damage": 30.0, "attack_interval": 0.9, "can_attack_fliers": true }
+      }
+    },
+    "mage": {
+      "display_name": "Μαγικός",
+      "prototype_enabled": false,
+      "levels": [
+        { "purchase_cost": 170, "damage": 4.0, "interval": 1.0, "range": 2.6, "slow_fraction": 0.3, "enemy_attack_reduction": 0.25, "effect_duration": 5.0, "damage_type": "magic" },
+        { "purchase_cost": 130, "damage": 6.0, "interval": 1.0, "range": 2.8, "slow_fraction": 0.35, "enemy_attack_reduction": 0.3, "effect_duration": 5.0, "damage_type": "magic" },
+        { "purchase_cost": 210, "damage": 8.0, "interval": 1.0, "range": 3.0, "slow_fraction": 0.4, "enemy_attack_reduction": 0.35, "effect_duration": 5.0, "damage_type": "magic" }
+      ],
+      "specializations": {
+        "A": { "purchase_cost": 300, "damage": 8.0, "interval": 1.0, "range": 3.0, "slow_fraction": 0.4, "enemy_attack_reduction": 0.35, "effect_duration": 20.0, "damage_type": "magic" },
+        "B": { "purchase_cost": 420, "damage": 110.0, "interval": 5.0, "range": 3.0, "knockback_distance": 0.8, "damage_type": "magic" }
+      }
+    },
+    "enhancer": {
+      "display_name": "Ενισχυτής",
+      "prototype_enabled": false,
+      "levels": [
+        { "purchase_cost": 550 },
+        { "purchase_cost": 330 },
+        { "purchase_cost": 520 }
+      ],
+      "specializations": {
+        "A": { "purchase_cost": 900, "kill_gold_multiplier": 1.5 },
+        "B": { "purchase_cost": 1100, "growth_rate_per_30_seconds": 0.008, "unlimited": true, "compounding": false }
+      }
+    }
+  }
+}

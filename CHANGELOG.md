@@ -1,0 +1,9 @@
+# Changelog
+
+## 0.1.0 — θεμελίωση playable πρωτοτύπου
+
+- Δημιουργήθηκε Godot project για οριζόντιο Android UI και offline runtime.
+- Προστέθηκαν διαχωρισμένα δεδομένα, simulation, combat/economy helpers, visual board και touch HUD.
+- Προστέθηκε πρώτη πίστα με 28 θέσεις, έναν ενεργό Ταχυβόλο και ένα δοκιμαστικό κύμα.
+- Προστέθηκαν headless έλεγχοι και GitHub Actions workflow για δοκιμές και debug APK.
+- Οι αριθμητικές τιμές παραμένουν προσχέδιο· βλ. `BALANCE.md`.

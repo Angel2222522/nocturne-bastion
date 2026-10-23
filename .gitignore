@@ -1,0 +1,20 @@
+# Godot generated data
+.godot/
+export.cfg
+*.translation
+
+# Local exports and editor state
+/build/
+/android/
+*.apk
+*.aab
+*.keystore
+*.jks
+/.codex/
+PULSE_*.xlsx
+
+# Local editor/OS files
+.DS_Store
+Thumbs.db
+*.tmp
+*.log
