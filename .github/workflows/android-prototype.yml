@@ -72,7 +72,19 @@ jobs:
         run: godot --headless --editor --path . --quit
 
       - name: Run deterministic rules tests
-        run: godot --headless --path . --script res://tests/run_tests.gd
+        run: |
+          mkdir -p build
+          set -o pipefail
+          godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee build/headless-tests.log
+
+      - name: Upload failed test diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: PULSE-test-diagnostics
+          path: build/headless-tests.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Export debug APK
         run: |
