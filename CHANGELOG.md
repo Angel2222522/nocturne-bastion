@@ -7,6 +7,7 @@
 - Το Android workflow διατηρεί πλέον τα logs όταν αποτυγχάνει η εξαγωγή APK.
 - Ενεργοποιήθηκε η εισαγωγή ETC2/ASTC που απαιτεί το Godot για Android export.
 - Το CI επαληθεύει την υπογραφή, το package/version, την απουσία INTERNET permission και το SHA-256 του APK.
+- Διορθώθηκε ο προσανατολισμός Android σε landscape και προστέθηκε έλεγχος manifest.
 
 ## 0.1.0 — θεμελίωση playable πρωτοτύπου
 
