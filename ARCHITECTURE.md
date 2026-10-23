@@ -4,6 +4,8 @@
 
 Το PULSE είναι ένα offline Godot 4 project γραμμένο σε GDScript. Για 2D παιχνίδι με μικρό και προβλέψιμο runtime, ενσωματωμένη υποστήριξη Android/touch και εξαγωγή APK, το Godot είναι κατάλληλη επιλογή. Χρησιμοποιούμε Compatibility renderer για ευρεία υποστήριξη συσκευών και αποφεύγουμε πρόσθετα runtime dependencies. Το Android build γίνεται σε CI, επειδή ο χρήστης αναπτύσσει αποκλειστικά από Android.
 
+Η ρύθμιση εισαγωγής `rendering/textures/vram_compression/import_etc2_astc` είναι ενεργή επειδή απαιτείται από το Android export του Godot. Νέα textures πρέπει να ελέγχονται και σε πραγματική συσκευή πριν από καλλιτεχνική παραγωγή.
+
 Η βάση είναι η σταθερή Godot 4.7.2. Η επίσημη τεκμηρίωση Android export περιγράφει το απαιτούμενο JDK 17, Android SDK και matching export templates για desktop/CI builds: [Godot 4.7 Android export](https://docs.godotengine.org/en/4.7/tutorials/export/exporting_for_android.html), [Godot 4.7.2 release](https://godotengine.org/download/archive/4.7.2-stable/).
 
 Οι κανόνες προσομοίωσης είναι `RefCounted` GDScript χωρίς εξάρτηση από SceneTree ή γραφικά. Η σκηνή παρουσιάζει snapshots και στέλνει εντολές· δεν αποφασίζει ζημιά, στόχευση ή οικονομία. Έτσι οι βασικοί υπολογισμοί τρέχουν με `--headless` και ελέγχονται χωρίς rendering.
