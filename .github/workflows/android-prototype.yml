@@ -87,10 +87,21 @@ jobs:
           retention-days: 7
 
       - name: Export debug APK
+        id: export_android_apk
         run: |
           mkdir -p build
-          godot --headless --path . --export-debug Android build/PULSE-debug.apk
+          set -o pipefail
+          godot --headless --path . --export-debug Android build/PULSE-debug.apk 2>&1 | tee build/android-export.log
           test -s build/PULSE-debug.apk
+
+      - name: Upload failed Android export diagnostics
+        if: failure() && steps.export_android_apk.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: PULSE-android-export-diagnostics
+          path: build/android-export.log
+          if-no-files-found: warn
+          retention-days: 7
 
       - name: Upload installable debug APK
         uses: actions/upload-artifact@v4
