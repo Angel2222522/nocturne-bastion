@@ -44,7 +44,7 @@ func _capture_gameplay_frame() -> void:
 	for slot_id in [27, 19, 8]:
 		if not _upgrade_levels(simulation, slot_id):
 			return
-	for upgrade in [[5, "A"], [6, "B"], [12, "B"], [2, "A"], [11, "B"]]:
+	for upgrade in [[5, "B"], [6, "B"], [12, "A"], [2, "A"], [11, "B"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 19)
@@ -121,14 +121,14 @@ func _capture_gameplay_frame() -> void:
 	counts["upgrade"] = upgrade_events
 	board.set("animation_counts", counts)
 	game_screen.set_process(true)
-	await create_timer(12.0).timeout
+	await create_timer(20.0).timeout
 	print("Gameplay effects before heavy specializations: ", JSON.stringify(board.get("animation_counts")))
 	if not _purchase_branch_through_ui(game_screen, simulation, 27, "B"):
 		return
 	await create_timer(2.0).timeout
 	if not _purchase_branch_through_ui(game_screen, simulation, 19, "B"):
 		return
-	await create_timer(16.0).timeout
+	await create_timer(8.0).timeout
 	counts = board.get("animation_counts")
 	print("Captured battle animation events: ", JSON.stringify(counts))
 	var winged_spawned: bool = int(simulation.spawned_by_enemy.get("winged", 0)) > 0
