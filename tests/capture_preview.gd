@@ -27,7 +27,7 @@ func _capture_gameplay_frame() -> void:
 	# Fixture budget lets the evidence run exercise all temporary categories in one real match.
 	simulation.wallet.gold = 25000
 	var fixture_towers: Array[Dictionary] = [
-		{"slot": 27, "tower": "rapid"}, {"slot": 4, "tower": "nuclear"},
+		{"slot": 27, "tower": "rapid"}, {"slot": 26, "tower": "nuclear"},
 		{"slot": 5, "tower": "mage"}, {"slot": 6, "tower": "enhancer"},
 		{"slot": 22, "tower": "mage"}, {"slot": 2, "tower": "enhancer"},
 		{"slot": 8, "tower": "rapid"}, {"slot": 11, "tower": "barracks"}
@@ -41,14 +41,14 @@ func _capture_gameplay_frame() -> void:
 			return
 	if not _require(simulation.towers.size() == 8, "Capture fixture must place every tower category before wave five"):
 		return
-	for slot_id in [27, 4, 8]:
+	for slot_id in [27, 26, 8]:
 		if not _upgrade_levels(simulation, slot_id):
 			return
 	for upgrade in [[5, "A"], [6, "B"], [22, "B"], [2, "A"], [11, "B"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
-	game_screen.set("selected_slot", 4)
-	game_screen.get("board").call("set_selected_slot", 4)
+	game_screen.set("selected_slot", 26)
+	game_screen.get("board").call("set_selected_slot", 26)
 	simulation.wave_index = 3
 	simulation.phase = "intermission"
 	game_screen.call("_refresh")
@@ -123,16 +123,19 @@ func _capture_gameplay_frame() -> void:
 	game_screen.set_process(true)
 	await create_timer(20.0).timeout
 	print("Gameplay effects before heavy specializations: ", JSON.stringify(board.get("animation_counts")))
-	if not _require(int(board.get("animation_counts")["debuff"]) > 0 and int(board.get("animation_counts")["knockback"]) > 0
-		and int(board.get("animation_counts")["soldier_attack"]) > 0,
-		"Mage specializations and Barracks soldiers must fight before heavy towers finish the match"):
+	if not _require(int(board.get("animation_counts")["debuff"]) > 0,
+		"Mage A must apply its effect during the live battle"):
 		return
-	if not _purchase_branch_through_ui(game_screen, simulation, 4, "B"):
+	if not _purchase_branch_through_ui(game_screen, simulation, 26, "B"):
 		return
 	await create_timer(0.5).timeout
 	print("Gameplay effects after Nuclear B purchase: ", JSON.stringify(board.get("animation_counts")))
 	if not _require(int(board.get("animation_counts")["radiation"]) > 0 and int(board.get("animation_counts")["blast"]) > 0,
 		"Nuclear B must radiate and explode against living enemies"):
+		return
+	await create_timer(4.5).timeout
+	if not _require(int(board.get("animation_counts")["knockback"]) > 0 and int(board.get("animation_counts")["soldier_attack"]) > 0,
+		"Mage B and Barracks soldiers must fight during the later mixed-wave entries"):
 		return
 	if not _purchase_branch_through_ui(game_screen, simulation, 27, "B"):
 		return
