@@ -1,0 +1,16 @@
+{
+  "source_commit": "27aff536ccfa99a8dbfb3103a22961fb42e9ab47",
+  "workflow_run": 40062726109,
+  "version": "0.2.0",
+  "version_code": 3,
+  "previous_version": "0.1.1 / 2",
+  "package": "org.pulsegame.prototype",
+  "sha256": "330d7175399ba75484173b2163fffe4a0ad91bec4cf3f66d202d29d560973866",
+  "size_bytes": 59983475,
+  "old_certificate": "e01b73f6675c0fbc9f2ff833230e0c4f1e154bd8b767954e3d3dd3b125324ffa",
+  "new_certificate": "cf61d437b69635be44ef852c18144c26dfa32fe3bcb457af7a53117cda671e80",
+  "same_signing_key": false,
+  "offline_permission_check": true,
+  "zip_integrity": true,
+  "physical_device_tested": false
+}

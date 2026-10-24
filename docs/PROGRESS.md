@@ -44,3 +44,15 @@
 - Core/combat/economy/data/enemies/towers/units/waves source unchanged. Static terrain native asset and vector art separated from rules.
 - Reviewed visual source advances to main for 0.2.0 / code 3. APK export/signature verification pending main CI. Generated capture/build assets explicitly excluded from Android package.
 - Not verified on physical Android: installation, vendor GPU frame rate and thermal behavior. No emulator used.
+
+
+## Delivered build verification — 24 Οκτωβρίου 2026 (Europe/Athens)
+
+- Main build source: `27aff536ccfa99a8dbfb3103a22961fb42e9ab47`, Actions run `40062726109` succeeded. Build 0.2.0 / 3, debug, package `org.pulsegame.prototype`, two ABIs (arm64-v8a and armeabi-v7a), same identity as 0.1.1 / 2.
+- Required gameplay capture completed before export. Final CI screenshots inspected at 1280×720 and 960×540. Real 24.067-second gameplay movie delivered.
+- Passed: source import, 88 rules checks, deterministic presentation equivalence regression, runtime capture assertions, signature v2/v3, landscape manifest, no INTERNET permission, ZIP integrity and local APK SHA-256 comparison to CI verification. Local UI acceptance also passed touch selection, contextual purchase, exact gold debit, hiding occupied build control, minimum 54px button and wave-start action.
+- APK size: 59983475 bytes. SHA-256: `330d7175399ba75484173b2163fffe4a0ad91bec4cf3f66d202d29d560973866`.
+- **Fresh-install only relative to 0.1.1**: actual previous certificate `e01b73f6675c0fbc9f2ff833230e0c4f1e154bd8b767954e3d3dd3b125324ffa` differs from `cf61d437b69635be44ef852c18144c26dfa32fe3bcb457af7a53117cda671e80`. Uninstall the old debug version first. No saved progress exists in this prototype; no migrations/data changes introduced.
+- Physical Android installation, upgrade and vendor performance are NOT tested. No emulator used. Core rules/data files unchanged.
+- Files delivered: PULSE-0.2.0.apk, PULSE-0.2.0-gameplay.png, PULSE-0.2.0-gameplay.mp4. Rebuilds need a new internal code before further distribution.
+- This final documentation checkpoint does not alter executable source or artifact identity.
