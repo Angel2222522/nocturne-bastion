@@ -28,9 +28,9 @@ func _capture_gameplay_frame() -> void:
 	simulation.wallet.gold = 25000
 	var fixture_towers: Array[Dictionary] = [
 		{"slot": 27, "tower": "rapid"}, {"slot": 19, "tower": "nuclear"},
-		{"slot": 5, "tower": "mage"},
-		{"slot": 6, "tower": "enhancer"}, {"slot": 12, "tower": "mage"},
-		{"slot": 2, "tower": "enhancer"}, {"slot": 8, "tower": "rapid"}
+		{"slot": 5, "tower": "mage"}, {"slot": 6, "tower": "enhancer"},
+		{"slot": 12, "tower": "mage"}, {"slot": 2, "tower": "enhancer"},
+		{"slot": 8, "tower": "rapid"}, {"slot": 11, "tower": "barracks"}
 	]
 	for entry in fixture_towers:
 		var slot_id: int = int(entry["slot"])
@@ -39,36 +39,22 @@ func _capture_gameplay_frame() -> void:
 		game_screen.call("_on_build_slot_pressed", slot_id)
 		if not _require(simulation.towers.has(slot_id), "Capture fixture tower purchase failed for %s" % tower_id):
 			return
-	if not _require(simulation.towers.size() == 7, "Capture fixture should place all non-Barracks support towers before the warm-up waves"):
+	if not _require(simulation.towers.size() == 8, "Capture fixture must place every tower category before wave five"):
 		return
-	for upgrade in [[27, "B"], [19, "B"], [5, "A"], [6, "B"], [12, "B"], [2, "A"]]:
+	for slot_id in [27, 19, 8]:
+		if not _upgrade_levels(simulation, slot_id):
+			return
+	for upgrade in [[5, "A"], [6, "B"], [12, "B"], [2, "A"], [11, "B"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 19)
 	game_screen.get("board").call("set_selected_slot", 19)
+	simulation.wave_index = 3
+	simulation.phase = "intermission"
 	game_screen.call("_refresh")
 	var presenter: BattlePresenter = game_screen.get("presenter")
-	# Advance the actual match through waves one to four; wave five stays live for the recording.
-	for target_wave in range(4):
-		if not _require(simulation.start_wave(), "Capture fixture could not start configured wave %d" % (target_wave + 1)):
-			return
-		var safety_steps: int = 0
-		while simulation.phase == "active" and safety_steps < 6000:
-			simulation.tick(0.25)
-			safety_steps += 1
-		if not _require(simulation.phase == "intermission", "Configured wave %d did not clear in capture fixture" % (target_wave + 1)):
-			return
-	game_screen.call("_on_tower_type_pressed", "barracks")
-	game_screen.call("_on_build_slot_pressed", 11)
-	if not _require(simulation.towers.has(11), "Capture fixture could not build the Barracks before wave five"):
-		return
-	if not _upgrade_branch(simulation, 11, "B"):
-		return
-	if not _require(simulation.towers.size() == 8, "Capture fixture must show all five categories in the recorded battle"):
-		return
-	# Keep construction cues while preventing synchronous setup combat from replaying in the clip.
+	# Keep construction cues while preventing the evidence setup from replaying in the clip.
 	var board: BoardView = game_screen.get("board")
-	board.call("set_snapshot", presenter.capture(simulation))
 	board.set("_effects", [])
 	board.set("_hit_age", {})
 	board.set("_recoil", {})
@@ -84,7 +70,7 @@ func _capture_gameplay_frame() -> void:
 	game_screen.call("_on_wave_pressed")
 	if not _require(simulation.phase == "active" and simulation.wave_index == 4, "Capture fixture could not start wave five from the game control"):
 		return
-	# Step the real simulation until its first surviving enemy, then freeze the frame for evidence.
+	# Preserve the first spawned enemy for one frame so the screenshot shows the live setup.
 	game_screen.set_process(false)
 	var original_cooldowns: Dictionary = {}
 	for slot_value in simulation.towers.keys():
@@ -106,6 +92,7 @@ func _capture_gameplay_frame() -> void:
 		return
 	if not _require(not simulation.enemies.is_empty(), "Capture must include live gameplay enemies"):
 		return
+	game_screen.call("_refresh", false)
 	board.set_snapshot(presenter.capture(simulation))
 	await RenderingServer.frame_post_draw
 	var output_path: String = ProjectSettings.globalize_path("res://build/PULSE-preview.png")
@@ -134,7 +121,14 @@ func _capture_gameplay_frame() -> void:
 	counts["upgrade"] = upgrade_events
 	board.set("animation_counts", counts)
 	game_screen.set_process(true)
-	await create_timer(30.0).timeout
+	await create_timer(12.0).timeout
+	print("Gameplay effects before heavy specializations: ", JSON.stringify(board.get("animation_counts")))
+	if not _purchase_branch_through_ui(game_screen, simulation, 27, "B"):
+		return
+	await create_timer(2.0).timeout
+	if not _purchase_branch_through_ui(game_screen, simulation, 19, "B"):
+		return
+	await create_timer(16.0).timeout
 	counts = board.get("animation_counts")
 	print("Captured battle animation events: ", JSON.stringify(counts))
 	var winged_spawned: bool = int(simulation.spawned_by_enemy.get("winged", 0)) > 0
@@ -155,7 +149,7 @@ func _capture_gameplay_frame() -> void:
 	var report: Dictionary = {
 		"real_gameplay": true,
 		"fixture_gold": 25000,
-		"fixture_note": "Evidence-only starting budget; all combat and presentation came from the game simulation.",
+		"fixture_note": "The evidence fixture starts the configured fifth wave directly; combat and UI specialization purchases use the shipped simulation.",
 		"capture_wave": 5,
 		"temporary_tower_categories": TOWER_IDS,
 		"animation_events": counts,
@@ -174,14 +168,28 @@ func _capture_gameplay_frame() -> void:
 	quit(0)
 
 
-func _upgrade_branch(simulation: BattleSimulation, slot_id: int, branch: String) -> bool:
+func _upgrade_levels(simulation: BattleSimulation, slot_id: int) -> bool:
 	var state: TowerState = simulation.towers[slot_id]["state"]
 	while state.level < state.definition["levels"].size():
 		if not _require(simulation.upgrade_tower(slot_id), "Capture fixture level upgrade failed for slot %d" % slot_id):
 			return false
+	return true
+
+
+func _upgrade_branch(simulation: BattleSimulation, slot_id: int, branch: String) -> bool:
+	if not _upgrade_levels(simulation, slot_id):
+		return false
 	if not _require(simulation.upgrade_tower(slot_id, branch), "Capture fixture branch upgrade failed for slot %d" % slot_id):
 		return false
 	return true
+
+
+func _purchase_branch_through_ui(screen: Control, simulation: BattleSimulation, slot_id: int, branch: String) -> bool:
+	screen.set("selected_slot", slot_id)
+	screen.call("_refresh")
+	screen.call("_on_upgrade_pressed", branch)
+	var state: TowerState = simulation.towers[slot_id]["state"]
+	return _require(state.specialization == branch, "Gameplay UI specialization purchase failed for slot %d" % slot_id)
 
 
 func _require(condition: bool, message: String) -> bool:
