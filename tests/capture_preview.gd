@@ -28,7 +28,7 @@ func _capture_gameplay_frame() -> void:
 	simulation.wallet.gold = 25000
 	var fixture_towers: Array[Dictionary] = [
 		{"slot": 27, "tower": "rapid"}, {"slot": 1, "tower": "nuclear"},
-		{"slot": 4, "tower": "barracks"}, {"slot": 5, "tower": "mage"},
+		{"slot": 5, "tower": "mage"},
 		{"slot": 6, "tower": "enhancer"}, {"slot": 17, "tower": "mage"},
 		{"slot": 2, "tower": "enhancer"}, {"slot": 8, "tower": "rapid"}
 	]
@@ -39,9 +39,9 @@ func _capture_gameplay_frame() -> void:
 		game_screen.call("_on_build_slot_pressed", slot_id)
 		if not _require(simulation.towers.has(slot_id), "Capture fixture tower purchase failed for %s" % tower_id):
 			return
-	if not _require(simulation.towers.size() == 8, "Capture fixture should show all five categories, both mage roles, both enhancer roles, and sniper support"):
+	if not _require(simulation.towers.size() == 7, "Capture fixture should place all non-Barracks support towers before the warm-up waves"):
 		return
-	for upgrade in [[27, "B"], [1, "B"], [4, "B"], [5, "A"], [6, "B"], [17, "B"], [2, "A"]]:
+	for upgrade in [[27, "B"], [1, "B"], [5, "A"], [6, "B"], [17, "B"], [2, "A"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 1)
@@ -58,6 +58,14 @@ func _capture_gameplay_frame() -> void:
 			safety_steps += 1
 		if not _require(simulation.phase == "intermission", "Configured wave %d did not clear in capture fixture" % (target_wave + 1)):
 			return
+	game_screen.call("_on_tower_type_pressed", "barracks")
+	game_screen.call("_on_build_slot_pressed", 4)
+	if not _require(simulation.towers.has(4), "Capture fixture could not build the Barracks before wave five"):
+		return
+	if not _upgrade_branch(simulation, 4, "B"):
+		return
+	if not _require(simulation.towers.size() == 8, "Capture fixture must show all five categories in the recorded battle"):
+		return
 	# Keep construction cues while preventing synchronous setup combat from replaying in the clip.
 	var board: BoardView = game_screen.get("board")
 	board.call("set_snapshot", presenter.capture(simulation))
