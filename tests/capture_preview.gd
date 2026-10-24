@@ -77,6 +77,10 @@ func _capture_gameplay_frame() -> void:
 	if not _require(simulation.phase == "active" and simulation.wave_index == 4, "Capture fixture could not start wave five from the game control"):
 		return
 	await create_timer(15.0).timeout
+	var empty_screen_wait: float = 0.0
+	while simulation.phase == "active" and simulation.enemies.is_empty() and empty_screen_wait < 5.0:
+		await create_timer(0.2).timeout
+		empty_screen_wait += 0.2
 	await RenderingServer.frame_post_draw
 	if not _require(simulation.phase == "active" and simulation.wave_index == 4, "Capture must show an active real fifth wave"):
 		return
@@ -94,7 +98,7 @@ func _capture_gameplay_frame() -> void:
 	if not _require(small_error == OK, "Small-phone screenshot must save successfully"):
 		return
 	root.size = PREVIEW_SIZE
-	await create_timer(10.0).timeout
+	await create_timer(maxf(0.0, 10.0 - empty_screen_wait)).timeout
 	var counts: Dictionary = board.get("animation_counts")
 	print("Captured battle animation events: ", JSON.stringify(counts))
 	var winged_spawned: bool = int(simulation.spawned_by_enemy.get("winged", 0)) > 0
