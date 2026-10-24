@@ -31,17 +31,14 @@ func _capture_gameplay_frame() -> void:
 		game_screen.call("_on_build_slot_pressed", index)
 	var extra_towers: Array[Dictionary] = [
 		{"slot": 5, "tower": "mage"}, {"slot": 6, "tower": "enhancer"},
-		{"slot": 8, "tower": "rapid"}, {"slot": 11, "tower": "rapid"},
-		{"slot": 14, "tower": "rapid"}, {"slot": 17, "tower": "rapid"},
-		{"slot": 20, "tower": "rapid"}, {"slot": 23, "tower": "rapid"},
-		{"slot": 26, "tower": "rapid"}
+		{"slot": 8, "tower": "rapid"}
 	]
 	for entry in extra_towers:
 		if not _require(simulation.request_build(int(entry["slot"]), String(entry["tower"])), "Capture fixture tower purchase failed"):
 			return
-	if not _require(simulation.towers.size() == 14, "Capture fixture should show all five categories and support towers"):
+	if not _require(simulation.towers.size() == 8, "Capture fixture should show all five categories, both mage roles, both enhancer roles, and sniper support"):
 		return
-	for upgrade in [[0, "A"], [1, "B"], [2, "B"], [3, "A"], [4, "B"], [5, "B"], [6, "A"]]:
+	for upgrade in [[0, "B"], [1, "B"], [2, "B"], [3, "A"], [4, "B"], [5, "B"], [6, "A"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 1)
@@ -58,12 +55,24 @@ func _capture_gameplay_frame() -> void:
 			safety_steps += 1
 		if not _require(simulation.phase == "intermission", "Configured wave %d did not clear in capture fixture" % (target_wave + 1)):
 			return
-	# Discard setup combat effects from the visual queue before recording wave four.
+	# Keep construction cues while preventing synchronous setup combat from replaying in the clip.
 	var board: BoardView = game_screen.get("board")
 	board.call("set_snapshot", presenter.capture(simulation))
-	if not _require(simulation.start_wave(), "Capture fixture could not start wave four"):
+	board.set("_effects", [])
+	board.set("_hit_age", {})
+	board.set("_recoil", {})
+	board.set("_core_hit_age", 10.0)
+	var animation_counts: Dictionary = board.get("animation_counts")
+	var build_events: int = int(animation_counts.get("build", 0))
+	var upgrade_events: int = int(animation_counts.get("upgrade", 0))
+	for kind in animation_counts.keys():
+		animation_counts[kind] = 0
+	animation_counts["build"] = build_events
+	animation_counts["upgrade"] = upgrade_events
+	board.set("animation_counts", animation_counts)
+	game_screen.call("_on_wave_pressed")
+	if not _require(simulation.phase == "active" and simulation.wave_index == 3, "Capture fixture could not start wave four from the game control"):
 		return
-	game_screen.call("_refresh")
 	await create_timer(15.0).timeout
 	await RenderingServer.frame_post_draw
 	if not _require(simulation.phase == "active" and simulation.wave_index == 3, "Capture must show an active real fourth wave"):
@@ -84,6 +93,7 @@ func _capture_gameplay_frame() -> void:
 	root.size = PREVIEW_SIZE
 	await create_timer(5.0).timeout
 	var counts: Dictionary = board.get("animation_counts")
+	print("Captured battle animation events: ", JSON.stringify(counts))
 	var winged_spawned: bool = int(simulation.spawned_by_enemy.get("winged", 0)) > 0
 	if not _require(winged_spawned, "Real gameplay capture must reach the configured flying-enemy entry"):
 		return
@@ -91,7 +101,9 @@ func _capture_gameplay_frame() -> void:
 		return
 	if not _require(int(counts["shot"]) > 0 and int(counts["death"]) > 0 and int(counts["build"]) >= 5, "Capture must show shots, defeats, and all tower builds"):
 		return
-	if not _require(int(counts["blast"]) > 0 and int(counts["radiation"]) > 0, "Nuclear specialisation must trigger visible combat effects"):
+	if not _require(int(counts["blast"]) > 0, "Nuclear specialisation must trigger a visible blast"):
+		return
+	if not _require(int(counts["radiation"]) > 0, "Nuclear B must radiate across multiple living enemies during the captured battle"):
 		return
 	if not _require(int(counts["debuff"]) > 0 and int(counts["knockback"]) > 0, "Both mage specialisations must trigger visible effects"):
 		return

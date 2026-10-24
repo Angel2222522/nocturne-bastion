@@ -68,12 +68,12 @@ func _build_interface() -> void:
 	add_child(background)
 
 	board = BoardViewScript.new()
-	_set_rect(board, 0.0, 0.09, 1.0, 0.79)
+	_set_rect(board, 0.0, 0.10, 1.0, 0.79)
 	board.build_slot_pressed.connect(_on_build_slot_pressed)
 	add_child(board)
 
 	var header: PanelContainer = PanelContainer.new()
-	_set_rect(header, 0.0, 0.0, 1.0, 0.09)
+	_set_rect(header, 0.0, 0.0, 1.0, 0.10)
 	header.add_theme_stylebox_override("panel", _panel_style(PANEL, PANEL_BORDER, 0))
 	add_child(header)
 	var header_row: HBoxContainer = HBoxContainer.new()
