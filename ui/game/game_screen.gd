@@ -83,17 +83,17 @@ func _build_interface() -> void:
 	brand.add_theme_constant_override("separation", 0)
 	header_row.add_child(brand)
 	brand.add_child(_label("PULSE", 24, Color("fff1dc"), true))
-	brand.add_child(_label("ΟΡΥΚΤΗ ΚΟΙΛΑΔΑ  /  01", 10, MUTED))
+	brand.add_child(_label("ΟΡΥΚΤΗ ΚΟΙΛΑΔΑ  /  01", 11, MUTED))
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header_row.add_child(spacer)
-	phase_label = _label("", 15, ACCENT, true)
+	phase_label = _label("", 16, ACCENT, true)
 	header_row.add_child(phase_label)
-	wave_summary_label = _label("", 12, MUTED)
+	wave_summary_label = _label("", 13, MUTED)
 	header_row.add_child(wave_summary_label)
-	gold_label = _label("", 19, GOLD, true)
+	gold_label = _label("", 20, GOLD, true)
 	header_row.add_child(gold_label)
-	lives_label = _label("", 19, Color("fff1dc"), true)
+	lives_label = _label("", 20, Color("fff1dc"), true)
 	header_row.add_child(lives_label)
 
 	var footer: PanelContainer = PanelContainer.new()
@@ -107,7 +107,7 @@ func _build_interface() -> void:
 	tower_row.add_theme_constant_override("separation", 8)
 	footer_column.add_child(tower_row)
 	for tower_id in TOWER_IDS:
-		var button: Button = _button("", TOWER_COLORS[tower_id], 43)
+		var button: Button = _button("", TOWER_COLORS[tower_id], 56)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_on_tower_type_pressed.bind(tower_id))
 		tower_row.add_child(button)
@@ -120,24 +120,24 @@ func _build_interface() -> void:
 	context.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	context.add_theme_constant_override("separation", 0)
 	action_row.add_child(context)
-	selection_label = _label("", 14, Color("fff1dc"), true)
+	selection_label = _label("", 15, Color("fff1dc"), true)
 	context.add_child(selection_label)
-	hint_label = _label("", 11, MUTED)
+	hint_label = _label("", 12, MUTED)
 	context.add_child(hint_label)
-	level_button = _button("ΑΝΑΒΑΘΜΙΣΗ", GOLD, 48)
-	level_button.custom_minimum_size.x = 132.0
+	level_button = _button("ΑΝΑΒΑΘΜΙΣΗ", GOLD, 64)
+	level_button.custom_minimum_size.x = 150.0
 	level_button.pressed.connect(_on_upgrade_pressed.bind(""))
 	action_row.add_child(level_button)
-	branch_a_button = _button("ΕΞΕΙΔΙΚΕΥΣΗ Α", ACCENT, 48)
-	branch_a_button.custom_minimum_size.x = 98.0
+	branch_a_button = _button("ΕΞΕΙΔΙΚΕΥΣΗ Α", ACCENT, 64)
+	branch_a_button.custom_minimum_size.x = 112.0
 	branch_a_button.pressed.connect(_on_upgrade_pressed.bind("A"))
 	action_row.add_child(branch_a_button)
-	branch_b_button = _button("ΕΞΕΙΔΙΚΕΥΣΗ Β", ACCENT, 48)
-	branch_b_button.custom_minimum_size.x = 98.0
+	branch_b_button = _button("ΕΞΕΙΔΙΚΕΥΣΗ Β", ACCENT, 64)
+	branch_b_button.custom_minimum_size.x = 112.0
 	branch_b_button.pressed.connect(_on_upgrade_pressed.bind("B"))
 	action_row.add_child(branch_b_button)
-	wave_button = _button("ΕΝΑΡΞΗ ΚΥΜΑΤΟΣ", ACCENT, 48)
-	wave_button.custom_minimum_size.x = 165.0
+	wave_button = _button("ΕΝΑΡΞΗ ΚΥΜΑΤΟΣ", ACCENT, 64)
+	wave_button.custom_minimum_size.x = 180.0
 	wave_button.pressed.connect(_on_wave_pressed)
 	action_row.add_child(wave_button)
 
@@ -180,7 +180,7 @@ func _button(text: String, accent_color: Color, height: float) -> Button:
 	var button: Button = Button.new()
 	button.text = text
 	button.custom_minimum_size = Vector2(0.0, height)
-	button.add_theme_font_size_override("font_size", 12)
+	button.add_theme_font_size_override("font_size", 14)
 	button.add_theme_font_override("font", BoldFont)
 	button.add_theme_color_override("font_color", Color("382c48"))
 	button.add_theme_color_override("font_disabled_color", Color("b8a9bd"))
