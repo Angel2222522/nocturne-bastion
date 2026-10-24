@@ -30,7 +30,7 @@ func _capture_gameplay_frame() -> void:
 		{"slot": 27, "tower": "rapid"}, {"slot": 18, "tower": "nuclear"},
 		{"slot": 5, "tower": "mage"}, {"slot": 6, "tower": "enhancer"},
 		{"slot": 22, "tower": "mage"}, {"slot": 2, "tower": "enhancer"},
-		{"slot": 8, "tower": "rapid"}, {"slot": 15, "tower": "barracks"}
+		{"slot": 8, "tower": "rapid"}, {"slot": 11, "tower": "barracks"}
 	]
 	for entry in fixture_towers:
 		var slot_id: int = int(entry["slot"])
@@ -44,7 +44,7 @@ func _capture_gameplay_frame() -> void:
 	for slot_id in [27, 18, 8]:
 		if not _upgrade_levels(simulation, slot_id):
 			return
-	for upgrade in [[5, "A"], [6, "B"], [22, "B"], [2, "A"], [15, "B"]]:
+	for upgrade in [[5, "A"], [6, "B"], [22, "B"], [2, "A"], [11, "B"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 18)
