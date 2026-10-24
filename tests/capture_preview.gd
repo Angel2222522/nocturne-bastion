@@ -28,9 +28,9 @@ func _capture_gameplay_frame() -> void:
 	simulation.wallet.gold = 25000
 	var fixture_towers: Array[Dictionary] = [
 		{"slot": 27, "tower": "rapid"}, {"slot": 1, "tower": "nuclear"},
-		{"slot": 2, "tower": "barracks"}, {"slot": 18, "tower": "mage"},
-		{"slot": 4, "tower": "enhancer"}, {"slot": 0, "tower": "mage"},
-		{"slot": 6, "tower": "enhancer"}, {"slot": 8, "tower": "rapid"}
+		{"slot": 4, "tower": "barracks"}, {"slot": 5, "tower": "mage"},
+		{"slot": 6, "tower": "enhancer"}, {"slot": 17, "tower": "mage"},
+		{"slot": 2, "tower": "enhancer"}, {"slot": 8, "tower": "rapid"}
 	]
 	for entry in fixture_towers:
 		var slot_id: int = int(entry["slot"])
@@ -41,7 +41,7 @@ func _capture_gameplay_frame() -> void:
 			return
 	if not _require(simulation.towers.size() == 8, "Capture fixture should show all five categories, both mage roles, both enhancer roles, and sniper support"):
 		return
-	for upgrade in [[27, "B"], [1, "B"], [2, "B"], [18, "A"], [4, "B"], [0, "B"], [6, "A"]]:
+	for upgrade in [[27, "B"], [1, "B"], [4, "B"], [5, "A"], [6, "B"], [17, "B"], [2, "A"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 1)
