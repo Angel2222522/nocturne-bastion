@@ -29,7 +29,7 @@ func _capture_gameplay_frame() -> void:
 	var fixture_towers: Array[Dictionary] = [
 		{"slot": 27, "tower": "rapid"}, {"slot": 19, "tower": "nuclear"},
 		{"slot": 5, "tower": "mage"},
-		{"slot": 6, "tower": "enhancer"}, {"slot": 17, "tower": "mage"},
+		{"slot": 6, "tower": "enhancer"}, {"slot": 12, "tower": "mage"},
 		{"slot": 2, "tower": "enhancer"}, {"slot": 8, "tower": "rapid"}
 	]
 	for entry in fixture_towers:
@@ -41,7 +41,7 @@ func _capture_gameplay_frame() -> void:
 			return
 	if not _require(simulation.towers.size() == 7, "Capture fixture should place all non-Barracks support towers before the warm-up waves"):
 		return
-	for upgrade in [[27, "B"], [19, "B"], [5, "A"], [6, "B"], [17, "B"], [2, "A"]]:
+	for upgrade in [[27, "B"], [19, "B"], [5, "A"], [6, "B"], [12, "B"], [2, "A"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 19)
@@ -59,10 +59,10 @@ func _capture_gameplay_frame() -> void:
 		if not _require(simulation.phase == "intermission", "Configured wave %d did not clear in capture fixture" % (target_wave + 1)):
 			return
 	game_screen.call("_on_tower_type_pressed", "barracks")
-	game_screen.call("_on_build_slot_pressed", 14)
-	if not _require(simulation.towers.has(14), "Capture fixture could not build the Barracks before wave five"):
+	game_screen.call("_on_build_slot_pressed", 11)
+	if not _require(simulation.towers.has(11), "Capture fixture could not build the Barracks before wave five"):
 		return
-	if not _upgrade_branch(simulation, 14, "B"):
+	if not _upgrade_branch(simulation, 11, "B"):
 		return
 	if not _require(simulation.towers.size() == 8, "Capture fixture must show all five categories in the recorded battle"):
 		return
