@@ -41,7 +41,11 @@ func _capture_gameplay_frame() -> void:
 			return
 	if not _require(simulation.towers.size() == 8, "Capture fixture should show all five categories, both mage roles, both enhancer roles, and sniper support"):
 		return
-	for upgrade in [[27, "B"], [1, "B"], [4, "B"], [5, "A"], [6, "B"], [17, "B"], [2, "A"]]:
+	var barracks_state: TowerState = simulation.towers[4]["state"]
+	while barracks_state.level < barracks_state.definition["levels"].size():
+		if not _require(simulation.upgrade_tower(4), "Capture fixture Barracks level upgrade failed"):
+			return
+	for upgrade in [[27, "B"], [1, "B"], [5, "A"], [6, "B"], [17, "B"], [2, "A"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 1)
@@ -108,6 +112,11 @@ func _capture_gameplay_frame() -> void:
 	counts["build"] = build_events
 	counts["upgrade"] = upgrade_events
 	board.set("animation_counts", counts)
+	game_screen.set("selected_slot", 4)
+	game_screen.call("_refresh")
+	game_screen.call("_on_upgrade_pressed", "B")
+	if not _require(simulation.towers[4]["state"].specialization == "B", "Capture must purchase the Barracks air-targeting specialization through the game UI"):
+		return
 	game_screen.set_process(true)
 	await create_timer(25.0).timeout
 	counts = board.get("animation_counts")
