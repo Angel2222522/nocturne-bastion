@@ -5,12 +5,15 @@ const BoardViewScript = preload("res://visuals/board_view.gd")
 const RegularFont = preload("res://assets/fonts/DejaVuSans.ttf")
 const BoldFont = preload("res://assets/fonts/DejaVuSans-Bold.ttf")
 
-const PANEL: Color = Color("192720")
-const PANEL_BORDER: Color = Color("50634f")
-const ACCENT: Color = Color("78d9bd")
-const GOLD: Color = Color("e9b765")
-const MUTED: Color = Color("c0b99f")
+const PANEL: Color = Color("382c48")
+const PANEL_BORDER: Color = Color("776181")
+const ACCENT: Color = Color("d7afff")
+const GOLD: Color = Color("f0c582")
+const MUTED: Color = Color("d6c9db")
 
+const PresenterScript = preload("res://visuals/battle_presenter.gd")
+
+var presenter: BattlePresenter = PresenterScript.new()
 var simulation: BattleSimulation
 var board: BoardView
 var gold_label: Label
@@ -39,81 +42,75 @@ func _process(delta: float) -> void:
 	while frame_accumulator >= BattleSimulationScript.FIXED_STEP:
 		simulation.tick(BattleSimulationScript.FIXED_STEP)
 		frame_accumulator -= BattleSimulationScript.FIXED_STEP
+		board.set_snapshot(presenter.capture(simulation))
 		updated = true
 	if updated:
-		_refresh()
+		_refresh(false)
 
 
 func _build_interface() -> void:
 	var background: ColorRect = ColorRect.new()
-	background.color = Color("0b120f")
+	background.color = PANEL
 	background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 
-	var header: PanelContainer = PanelContainer.new()
-	_set_rect(header, 0.02, 0.025, 0.98, 0.135)
-	header.add_theme_stylebox_override("panel", _panel_style(PANEL, PANEL_BORDER, 18))
-	add_child(header)
-	var header_row: HBoxContainer = HBoxContainer.new()
-	header_row.add_theme_constant_override("separation", 20)
-	header.add_child(header_row)
-	var title_column: VBoxContainer = VBoxContainer.new()
-	title_column.add_theme_constant_override("separation", 0)
-	header_row.add_child(title_column)
-	var title: Label = _label("PULSE", 25, Color("f3ecd9"), true)
-	title_column.add_child(title)
-	title_column.add_child(_label("ΑΜΥΝΑ ΠΥΡΗΝΑ  /  ΠΡΩΤΟΤΥΠΟ 0.1.1", 12, MUTED))
-	var spacer: Control = Control.new()
-	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header_row.add_child(spacer)
-	gold_label = _label("ΧΡΥΣΟΣ", 18, GOLD, true)
-	header_row.add_child(gold_label)
-	lives_label = _label("ΠΥΡΗΝΑΣ", 18, ACCENT, true)
-	header_row.add_child(lives_label)
-	phase_label = _label("ΕΤΟΙΜΟ", 17, Color("d8e2eb"), true)
-	header_row.add_child(phase_label)
-
+	# Almost the entire width belongs to the battlefield. No permanent sidebar.
 	board = BoardViewScript.new()
-	_set_rect(board, 0.02, 0.16, 0.725, 0.97)
+	_set_rect(board, 0.0, 0.095, 1.0, 0.89)
 	board.build_slot_pressed.connect(_on_build_slot_pressed)
 	add_child(board)
 
-	var sidebar: PanelContainer = PanelContainer.new()
-	_set_rect(sidebar, 0.745, 0.16, 0.98, 0.97)
-	sidebar.add_theme_stylebox_override("panel", _panel_style(PANEL, PANEL_BORDER, 18))
-	add_child(sidebar)
-	var margin: MarginContainer = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 18)
-	margin.add_theme_constant_override("margin_right", 18)
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 14)
-	sidebar.add_child(margin)
-	var controls: VBoxContainer = VBoxContainer.new()
-	controls.add_theme_constant_override("separation", 12)
-	margin.add_child(controls)
-	controls.add_child(_label("ΚΕΝΤΡΟ ΔΙΟΙΚΗΣΗΣ", 19, Color("f3ecd9"), true))
-	controls.add_child(_label("Δοκιμαστικός τομέας 01", 14, MUTED))
-	controls.add_child(_separator())
-	controls.add_child(_label("ΕΠΙΛΕΓΜΕΝΗ ΘΕΣΗ", 12, ACCENT, true))
-	slot_label = _label("Άγγιξε έναν κύκλο στον χάρτη", 15, Color("e5ebf1"))
-	slot_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	controls.add_child(slot_label)
-	build_button = _button("ΚΑΤΑΣΚΕΥΑΣΕ ΤΑΧΥΒΟΛΟ", GOLD)
+	var header: PanelContainer = PanelContainer.new()
+	_set_rect(header, 0.0, 0.0, 1.0, 0.095)
+	header.add_theme_stylebox_override("panel", _panel_style(PANEL, PANEL_BORDER, 0))
+	add_child(header)
+	var header_row: HBoxContainer = HBoxContainer.new()
+	header_row.add_theme_constant_override("separation", 30)
+	header.add_child(header_row)
+	var brand: VBoxContainer = VBoxContainer.new()
+	brand.add_theme_constant_override("separation", 0)
+	header_row.add_child(brand)
+	brand.add_child(_label("PULSE", 26, Color("fff1dc"), true))
+	brand.add_child(_label("ΟΡΥΚΤΗ ΚΟΙΛΑΔΑ  /  01", 11, MUTED))
+	var spacer: Control = Control.new()
+	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header_row.add_child(spacer)
+	gold_label = _label("", 22, GOLD, true)
+	header_row.add_child(gold_label)
+	lives_label = _label("", 22, ACCENT, true)
+	header_row.add_child(lives_label)
+	var wave_column: VBoxContainer = VBoxContainer.new()
+	wave_column.add_theme_constant_override("separation", 0)
+	header_row.add_child(wave_column)
+	phase_label = _label("", 15, Color("fff1dc"), true)
+	wave_column.add_child(phase_label)
+	wave_summary_label = _label("", 12, MUTED)
+	wave_column.add_child(wave_summary_label)
+
+	var footer: PanelContainer = PanelContainer.new()
+	_set_rect(footer, 0.0, 0.89, 1.0, 1.0)
+	footer.add_theme_stylebox_override("panel", _panel_style(PANEL, PANEL_BORDER, 0))
+	add_child(footer)
+	var footer_row: HBoxContainer = HBoxContainer.new()
+	footer_row.add_theme_constant_override("separation", 18)
+	footer.add_child(footer_row)
+	var context: VBoxContainer = VBoxContainer.new()
+	context.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	context.add_theme_constant_override("separation", 3)
+	footer_row.add_child(context)
+	slot_label = _label("", 19, Color("fff1dc"), true)
+	context.add_child(slot_label)
+	hint_label = _label("", 13, MUTED)
+	context.add_child(hint_label)
+	build_button = _button("", GOLD)
+	build_button.custom_minimum_size.x = 280.0
 	build_button.pressed.connect(_on_build_pressed)
-	controls.add_child(build_button)
-	controls.add_child(_separator())
-	controls.add_child(_label("ΚΥΜΑ 1", 12, ACCENT, true))
-	wave_summary_label = _label("Δοκιμαστικοί αντίπαλοι", 15, Color("e5ebf1"))
-	controls.add_child(wave_summary_label)
+	footer_row.add_child(build_button)
 	start_button = _button("ΕΝΑΡΞΗ ΚΥΜΑΤΟΣ", ACCENT)
+	start_button.custom_minimum_size.x = 265.0
 	start_button.pressed.connect(_on_start_pressed)
-	controls.add_child(start_button)
-	var lower_spacer: Control = Control.new()
-	lower_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	controls.add_child(lower_spacer)
-	hint_label = _label("Στήσε άμυνα και ξεκίνα το κύμα. Οι βολές και οι ανταμοιβές υπολογίζονται αυτόματα.", 13, MUTED)
-	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	controls.add_child(hint_label)
+	footer_row.add_child(start_button)
 
 
 func _set_rect(control: Control, left: float, top: float, right: float, bottom: float) -> void:
@@ -158,12 +155,12 @@ func _button(text: String, accent_color: Color) -> Button:
 	button.custom_minimum_size = Vector2(0.0, 54.0)
 	button.add_theme_font_size_override("font_size", 15)
 	button.add_theme_font_override("font", BoldFont)
-	button.add_theme_color_override("font_color", Color("101b2b"))
-	button.add_theme_color_override("font_disabled_color", Color("718095"))
+	button.add_theme_color_override("font_color", Color("382c48"))
+	button.add_theme_color_override("font_disabled_color", Color("b8a9bd"))
 	button.add_theme_stylebox_override("normal", _panel_style(accent_color, accent_color.lightened(0.12), 12))
 	button.add_theme_stylebox_override("hover", _panel_style(accent_color.lightened(0.12), accent_color, 12))
 	button.add_theme_stylebox_override("pressed", _panel_style(accent_color.darkened(0.08), accent_color, 12))
-	button.add_theme_stylebox_override("disabled", _panel_style(Color("344457"), Color("40556b"), 12))
+	button.add_theme_stylebox_override("disabled", _panel_style(Color("51435e"), Color("766381"), 12))
 	return button
 
 
@@ -191,35 +188,37 @@ func _on_start_pressed() -> void:
 	_refresh()
 
 
-func _refresh() -> void:
-	var snapshot: Dictionary = simulation.snapshot()
-	board.set_snapshot(snapshot)
+func _refresh(refresh_visuals: bool = true) -> void:
+	if refresh_visuals:
+		board.set_snapshot(presenter.capture(simulation))
 	board.set_selected_slot(selected_slot)
 	gold_label.text = "ΧΡΥΣΟΣ  %d" % simulation.wallet.gold
 	lives_label.text = "ΠΥΡΗΝΑΣ  %d" % simulation.lives
-	wave_summary_label.text = "%d δοκιμαστικοί αντίπαλοι" % simulation.wave_enemy_total
+	wave_summary_label.text = "%d / %d εμφανίστηκαν  ·  %d εξοντώσεις" % [simulation.spawned_count, simulation.wave_enemy_total, simulation.killed_count]
 	phase_label.text = _phase_text(simulation.phase)
 	phase_label.add_theme_color_override("font_color", ACCENT if simulation.phase != "lost" else Color("f27e73"))
 	var selected_is_occupied: bool = selected_slot >= 0 and simulation.towers.has(selected_slot)
 	if selected_slot < 0:
-		slot_label.text = "Άγγιξε έναν κύκλο στον χάρτη"
+		slot_label.text = "Επίλεξε βάση κατασκευής"
 	elif selected_is_occupied:
 		var tower: Dictionary = simulation.towers[selected_slot]
-		slot_label.text = "Θέση %02d · Ταχυβόλος επιπέδου %d" % [selected_slot + 1, int(tower["level"])]
+		slot_label.text = "ΘΕΣΗ %02d  ·  ΤΑΧΥΒΟΛΟΣ %d" % [selected_slot + 1, int(tower["level"])]
 	else:
-		slot_label.text = "Θέση %02d · Κενή" % (selected_slot + 1)
+		slot_label.text = "ΘΕΣΗ %02d  ·  ΕΛΕΥΘΕΡΗ ΒΑΣΗ" % (selected_slot + 1)
 	var cost: int = simulation.build_cost("rapid")
-	build_button.text = "ΚΑΤΑΣΚΕΥΑΣΕ ΤΑΧΥΒΟΛΟ\n%d νομίσματα" % cost
+	build_button.text = "ΤΑΧΥΒΟΛΟΣ  ·  %d ΧΡΥΣΟΣ" % cost
+	build_button.visible = selected_slot >= 0 and not selected_is_occupied
+	hint_label.text = "Κατασκευή με αφή · Αυτόματη επίθεση" if selected_slot < 0 else ("Ο πύργος επιτίθεται αυτόματα." if selected_is_occupied else "Άγγιξε ΤΑΧΥΒΟΛΟΣ για κατασκευή.")
 	build_button.disabled = selected_slot < 0 or selected_is_occupied or cost < 0 or not simulation.wallet.can_afford(cost) or simulation.phase in ["won", "lost"]
 	start_button.disabled = simulation.phase != "ready"
 	match simulation.phase:
 		"active":
-			start_button.text = "ΚΥΜΑ ΣΕ ΕΞΕΛΙΞΗ"
+			start_button.text = "ΚΥΜΑ 1 · ΣΕ ΕΞΕΛΙΞΗ"
 		"won":
-			start_button.text = "ΝΙΚΗ · ΚΥΜΑ ΟΛΟΚΛΗΡΩΘΗΚΕ"
-			hint_label.text = "Καθαρίστηκε το δοκιμαστικό κύμα. Η ισορροπία χρειάζεται playtest πριν οριστικοποιηθεί."
+			start_button.text = "ΚΥΜΑ 1 · ΝΙΚΗ"
+			hint_label.text = "Το δοκιμαστικό κύμα ολοκληρώθηκε."
 		"lost":
-			start_button.text = "ΗΤΤΑ · ΠΥΡΗΝΑΣ ΕΞΑΝΤΛΗΘΗΚΕ"
+			start_button.text = "ΚΥΜΑ 1 · ΗΤΤΑ"
 			hint_label.text = "Ο πυρήνας έμεινε χωρίς ζωές."
 		_:
 			start_button.text = "ΕΝΑΡΞΗ ΚΥΜΑΤΟΣ"
@@ -228,7 +227,7 @@ func _refresh() -> void:
 func _phase_text(current_phase: String) -> String:
 	match current_phase:
 		"active":
-			return "ΚΥΜΑ ΣΕ ΕΞΕΛΙΞΗ"
+			return "ΚΥΜΑ 1 · ΣΕ ΕΞΕΛΙΞΗ"
 		"won":
 			return "ΝΙΚΗ"
 		"lost":

@@ -2,7 +2,7 @@ name: Android prototype
 
 on:
   push:
-    branches: [main]
+    branches: [main, "design/**"]
   pull_request:
   workflow_dispatch:
 
@@ -76,6 +76,7 @@ jobs:
           mkdir -p build
           set -o pipefail
           godot --headless --path . --script res://tests/run_tests.gd 2>&1 | tee build/headless-tests.log
+          godot --headless --path . --script res://tests/test_presentation.gd 2>&1 | tee build/presentation-tests.log
 
       - name: Upload failed test diagnostics
         if: failure()
@@ -86,7 +87,31 @@ jobs:
           if-no-files-found: warn
           retention-days: 7
 
+      - name: Capture actual gameplay and animation evidence
+        run: |
+          mkdir -p build
+          command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y ffmpeg)
+          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --fixed-fps 30 --write-movie build/PULSE-gameplay.avi --script res://tests/capture_preview.gd
+          test -s build/PULSE-preview.png
+          test -s build/visual-verification.json
+          ffmpeg -y -loglevel error -i build/PULSE-gameplay.avi -c:v libx264 -preset fast -crf 22 -pix_fmt yuv420p -movflags +faststart -an build/PULSE-gameplay.mp4
+          rm build/PULSE-gameplay.avi
+
+      - name: Upload gameplay evidence
+        if: always() && hashFiles('build/PULSE-preview.png') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: PULSE-visual-preview
+          path: |
+            build/PULSE-preview.png
+            build/PULSE-small-preview.png
+            build/PULSE-gameplay.mp4
+            build/visual-verification.json
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Export debug APK
+        if: github.ref == 'refs/heads/main'
         id: export_android_apk
         run: |
           mkdir -p build
@@ -104,13 +129,14 @@ jobs:
           retention-days: 7
 
       - name: Verify APK signature and offline package
+        if: github.ref == 'refs/heads/main'
         run: |
           APK="build/PULSE-debug.apk"
           BUILD_TOOLS="$ANDROID_HOME/build-tools/35.0.1"
           "$BUILD_TOOLS/apksigner" verify --verbose --print-certs "$APK" | tee build/apk-signature.txt
           "$BUILD_TOOLS/aapt" dump badging "$APK" | tee build/apk-metadata.txt
           "$BUILD_TOOLS/aapt" dump permissions "$APK" | tee -a build/apk-metadata.txt
-          grep -F "package: name='org.pulsegame.prototype' versionCode='2' versionName='0.1.1'" build/apk-metadata.txt
+          grep -F "package: name='org.pulsegame.prototype' versionCode='3' versionName='0.2.0'" build/apk-metadata.txt
           grep -F "uses-feature: name='android.hardware.screen.landscape'" build/apk-metadata.txt
           if grep -Fq 'android.permission.INTERNET' build/apk-metadata.txt; then
             echo 'Offline prototype APK unexpectedly requests INTERNET permission.' >&2
@@ -118,23 +144,8 @@ jobs:
           fi
           sha256sum "$APK" | tee build/apk-sha256.txt
 
-      - name: Capture visual preview
-        continue-on-error: true
-        run: |
-          mkdir -p build
-          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --script res://tests/capture_preview.gd
-          test -s build/PULSE-preview.png
-
-      - name: Upload visual preview
-        if: always() && hashFiles('build/PULSE-preview.png') != ''
-        uses: actions/upload-artifact@v4
-        with:
-          name: PULSE-visual-preview
-          path: build/PULSE-preview.png
-          if-no-files-found: warn
-          retention-days: 7
-
       - name: Upload APK verification record
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: PULSE-apk-verification
@@ -143,6 +154,7 @@ jobs:
           retention-days: 14
 
       - name: Upload installable debug APK
+        if: github.ref == 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: PULSE-debug-apk

@@ -4,13 +4,13 @@ extends Control
 signal build_slot_pressed(slot_id: int)
 
 const SLOT_HIT_RADIUS: float = 32.0
-const UI_FONT = preload("res://assets/fonts/DejaVuSans.ttf")
-const BACKDROP: Texture2D = preload("res://assets/world/level_01_backdrop.jpg")
-const RAPID_TOWER: Texture2D = preload("res://assets/towers/rapid_tower.png")
-const CINDER_MITE: Texture2D = preload("res://assets/enemies/cinder_mite.png")
-
-const ROAD_WIDTH: float = 38.0
-const ROAD_SEAM_SPACING: float = 48.0
+const FOUNDATION: Texture2D = preload("res://assets/vector/foundation.svg")
+const TOWER_BASE: Texture2D = preload("res://assets/vector/tower_base.svg")
+const TURRET: Texture2D = preload("res://assets/vector/turret.svg")
+const MITE: Texture2D = preload("res://assets/vector/mite_body.svg")
+const CORE: Texture2D = preload("res://assets/vector/core.svg")
+const PORTAL: Texture2D = preload("res://assets/vector/portal.svg")
+const BACKDROP: Texture2D = preload("res://assets/world/mineral_valley.jpg")
 
 var route: Array = []
 var slots: Array = []
@@ -18,12 +18,70 @@ var enemies: Array = []
 var selected_slot: int = -1
 var _map_origin: Vector2 = Vector2.ZERO
 var _map_scale: float = 1.0
+var _clock: float = 0.0
+var _snapshot_age: float = 0.1
+var _previous_positions: Dictionary = {}
+var _current_positions: Dictionary = {}
+var _angles: Dictionary = {}
+var _recoil: Dictionary = {}
+var _build_age: Dictionary = {}
+var _hit_age: Dictionary = {}
+var _effects: Array[Dictionary] = []
+var _static_layer: Node2D
+var _terrain_dirty: bool = true
+var _core_hit_age: float = 10.0
+var animation_counts: Dictionary = {"shot": 0, "hit": 0, "death": 0, "build": 0, "spawn": 0, "leak": 0}
+
+
+func _ready() -> void:
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	_static_layer = Node2D.new()
+	_static_layer.show_behind_parent = true
+	_static_layer.draw.connect(_draw_terrain)
+	add_child(_static_layer)
+	resized.connect(_invalidate_terrain)
+	queue_redraw()
+
+
+func _invalidate_terrain() -> void:
+	_terrain_dirty = true
 
 
 func set_snapshot(snapshot: Dictionary) -> void:
+	if route.is_empty():
+		_terrain_dirty = true
 	route = snapshot.get("route", [])
 	slots = snapshot.get("slots", [])
 	enemies = snapshot.get("enemies", [])
+	_previous_positions = _current_positions.duplicate()
+	_current_positions.clear()
+	for enemy in enemies:
+		_current_positions[int(enemy["id"])] = enemy["position"]
+	for key in _angles.keys():
+		if key is String and String(key).begins_with("enemy_"):
+			if not _current_positions.has(int(String(key).trim_prefix("enemy_"))):
+				_angles.erase(key)
+	_snapshot_age = 0.0
+	for event in snapshot.get("effects", []):
+		var kind: String = event["kind"]
+		if animation_counts.has(kind):
+			animation_counts[kind] += 1
+		match kind:
+			"shot":
+				_recoil[int(event["slot"])] = 0.0
+				_angles[int(event["slot"])] = (Vector2(event["target"]) - Vector2(event["position"])).angle()
+				_effects.append({"kind": kind, "position": event["position"], "target": event["target"], "age": 0.0, "duration": 0.14})
+			"build":
+				_build_age[int(event["slot"])] = 0.0
+			"hit":
+				_hit_age[int(event["id"])] = 0.0
+			"death", "leak", "spawn":
+				_effects.append({"kind": kind, "position": event["position"], "age": 0.0, "duration": 0.55})
+			"core_hit":
+				_core_hit_age = 0.0
+	# Explicit bounds keep visual effects from growing with long battles.
+	if _effects.size() > 128:
+		_effects = _effects.slice(_effects.size() - 128)
 	queue_redraw()
 
 
@@ -32,73 +90,64 @@ func set_selected_slot(slot_id: int) -> void:
 	queue_redraw()
 
 
-func _draw() -> void:
-	if BACKDROP != null:
-		draw_texture_rect(BACKDROP, Rect2(Vector2.ZERO, size), false)
-	else:
-		draw_rect(Rect2(Vector2.ZERO, size), Color("172321"))
-	_draw_atmosphere()
+func _process(delta: float) -> void:
+	_clock += delta
+	_snapshot_age += delta
+	_core_hit_age += delta
+	for table in [_recoil, _build_age, _hit_age]:
+		for key in table.keys():
+			table[key] = float(table[key]) + delta
+			if float(table[key]) > 0.65:
+				table.erase(key)
+	for index in range(_effects.size() - 1, -1, -1):
+		_effects[index]["age"] = float(_effects[index]["age"]) + delta
+		if float(_effects[index]["age"]) >= float(_effects[index]["duration"]):
+			_effects.remove_at(index)
 	_update_map_transform()
-	_draw_route()
-	if route.size() >= 2:
-		_draw_gate(_world_to_screen(route[0]), Color("eab45c"), false)
-		_draw_gate(_world_to_screen(route[route.size() - 1]), Color("72d3bd"), true)
-	_draw_build_slots()
-	_draw_enemies()
-	_draw_map_caption()
-	_draw_frame()
+	if _terrain_dirty and is_instance_valid(_static_layer):
+		_static_layer.queue_redraw()
+		_terrain_dirty = false
+	queue_redraw()
 
 
-func _draw_atmosphere() -> void:
-	# The illustration carries detail; this wash keeps the playable path legible.
-	draw_rect(Rect2(Vector2.ZERO, size), Color(0.025, 0.045, 0.05, 0.18))
+func _draw() -> void:
+	_update_map_transform()
+	_draw_gates()
+	for slot in slots:
+		var id: int = int(slot["id"])
+		var center: Vector2 = _world_to_screen(slot["position"])
+		var occupied: bool = not String(slot.get("tower_id", "")).is_empty()
+		if id == selected_slot:
+			_draw_selection(center)
+		if occupied:
+			_draw_tower(center, id)
+		else:
+			_stamp(FOUNDATION, center, 43.0)
+	for enemy in enemies:
+		_draw_enemy(enemy)
+	_draw_effects()
 
 
-func _draw_frame() -> void:
-	var frame_color: Color = Color("e2c27a")
-	frame_color.a = 0.32
-	draw_rect(Rect2(Vector2(1.0, 1.0), size - Vector2(2.0, 2.0)), frame_color, false, 1.0)
-
-
-func _draw_map_caption() -> void:
-	draw_rect(Rect2(Vector2(15.0, size.y - 39.0), Vector2(220.0, 25.0)), Color(0.035, 0.055, 0.06, 0.72))
-	draw_string(
-		UI_FONT,
-		Vector2(25.0, size.y - 22.0),
-		"01   /   ΘΕΡΜΙΚΟ ΠΕΡΑΣΜΑ",
-		HORIZONTAL_ALIGNMENT_LEFT,
-		-1,
-		12,
-		Color("d8c89e")
-	)
+func _stamp(texture: Texture2D, center: Vector2, diameter: float, tint: Color = Color.WHITE) -> void:
+	draw_texture_rect(texture, Rect2(center - Vector2.ONE * diameter * 0.5, Vector2.ONE * diameter), false, tint)
 
 
 func _update_map_transform() -> void:
-	var available: Vector2 = size - Vector2(72.0, 84.0)
 	var bounds: Rect2 = _world_bounds()
-	_map_scale = minf(available.x / bounds.size.x, available.y / bounds.size.y)
-	var scaled_size: Vector2 = bounds.size * _map_scale
-	_map_origin = Vector2(
-		(size.x - scaled_size.x) * 0.5,
-		(size.y - scaled_size.y) * 0.5
-	) - bounds.position * _map_scale
+	var available: Vector2 = size - Vector2(110.0, 76.0)
+	_map_scale = maxf(1.0, minf(available.x / bounds.size.x, available.y / bounds.size.y))
+	_map_origin = (size - bounds.size * _map_scale) * 0.5 - bounds.position * _map_scale
 
 
 func _world_bounds() -> Rect2:
-	var points: Array[Vector2] = []
+	var minimum: Vector2 = Vector2.ZERO
+	var maximum: Vector2 = Vector2.ONE
 	for point in route:
-		points.append(point)
+		minimum = minimum.min(point)
+		maximum = maximum.max(point)
 	for slot in slots:
-		points.append(slot["position"])
-	if points.is_empty():
-		return Rect2(Vector2.ZERO, Vector2.ONE)
-	var minimum: Vector2 = points[0]
-	var maximum: Vector2 = points[0]
-	for point in points:
-		minimum.x = minf(minimum.x, point.x)
-		minimum.y = minf(minimum.y, point.y)
-		maximum.x = maxf(maximum.x, point.x)
-		maximum.y = maxf(maximum.y, point.y)
+		minimum = minimum.min(slot["position"])
+		maximum = maximum.max(slot["position"])
 	return Rect2(minimum, maximum - minimum)
 
 
@@ -106,113 +155,152 @@ func _world_to_screen(point: Vector2) -> Vector2:
 	return _map_origin + point * _map_scale
 
 
-func _draw_route() -> void:
+func _draw_terrain() -> void:
+	_update_map_transform()
+	_static_layer.draw_texture_rect(BACKDROP, Rect2(Vector2.ZERO, size), false)
 	if route.size() < 2:
 		return
 	var points: PackedVector2Array = PackedVector2Array()
 	for point in route:
 		points.append(_world_to_screen(point))
-	_draw_rounded_road_layer(points, Color("17231f"), ROAD_WIDTH + 10.0)
-	_draw_rounded_road_layer(points, Color("302f27"), ROAD_WIDTH + 3.0)
-	_draw_rounded_road_layer(points, Color("655b43"), ROAD_WIDTH - 2.0)
-	_draw_rounded_road_layer(points, Color("958361"), ROAD_WIDTH - 12.0)
-	_draw_road_seams(points)
-	_draw_rounded_road_layer(points, Color("5dcbb3", 0.52), 7.0)
-	_draw_rounded_road_layer(points, Color("a0f1d7"), 2.0)
-
-
-func _draw_rounded_road_layer(points: PackedVector2Array, color: Color, width: float) -> void:
-	draw_polyline(points, color, width, true)
-	var radius: float = width * 0.5
-	for point in points:
-		draw_circle(point, radius, color)
-
-
-func _draw_road_seams(points: PackedVector2Array) -> void:
-	for segment_index in range(points.size() - 1):
-		var start: Vector2 = points[segment_index]
-		var finish: Vector2 = points[segment_index + 1]
-		var segment: Vector2 = finish - start
-		var segment_length: float = segment.length()
-		if segment_length <= ROAD_SEAM_SPACING:
-			continue
-		var tangent: Vector2 = segment / segment_length
+	# Bedded trail, contrasting sculpted shoulders, then individual irregular paving stones.
+	_static_layer.draw_polyline(points, Color("c4a08c", 0.42), 52.0, true)
+	_static_layer.draw_polyline(points, Color("e4c6a3"), 44.0, true)
+	_static_layer.draw_polyline(points, Color("b9917f"), 37.0, true)
+	_static_layer.draw_polyline(points, Color("cba18b"), 34.0, true)
+	for index in range(points.size() - 1):
+		var start: Vector2 = points[index]
+		var finish: Vector2 = points[index + 1]
+		var tangent: Vector2 = (finish - start).normalized()
 		var normal: Vector2 = Vector2(-tangent.y, tangent.x)
-		var seam_count: int = int(segment_length / ROAD_SEAM_SPACING)
-		for seam_index in range(1, seam_count + 1):
-			var distance: float = ROAD_SEAM_SPACING * float(seam_index)
-			if distance >= segment_length - 12.0:
-				continue
-			var seam_center: Vector2 = start + tangent * distance
-			draw_line(
-				seam_center - normal * (ROAD_WIDTH * 0.29),
-				seam_center + normal * (ROAD_WIDTH * 0.29),
-				Color("594f3d", 0.8),
-				1.5,
-				true
-			)
+		var count: int = maxi(1, int(start.distance_to(finish) / 22.0))
+		for stone_index in range(count):
+			var a: Vector2 = start.lerp(finish, float(stone_index) / count)
+			var b: Vector2 = start.lerp(finish, float(stone_index + 1) / count)
+			var offset: float = sin(float(stone_index * 7 + index * 31)) * 1.5
+			var color: Color = [Color("dbb29a"), Color("e1bba1"), Color("d7aa92"), Color("e6c0a4")][stone_index % 4]
+			for side in [-1.0, 1.0]:
+				var outer: float = side * 15.0
+				var poly: PackedVector2Array = PackedVector2Array([a + tangent * 1.0 + normal * (side + offset), b - tangent * 1.0 + normal * side, b - tangent * 1.5 + normal * outer, a + tangent * 2.0 + normal * (outer + offset)])
+				_static_layer.draw_colored_polygon(poly, color)
+			# Interrupted pale curb blocks look like actual stone, not a luminous route line.
+			for side in [-1.0, 1.0]:
+				var c: Vector2 = (a + b) * 0.5 + normal * side * (20.0 + offset * 0.45)
+				_static_layer.draw_line(c - tangent * 8.0, c + tangent * 8.0, Color("f8e3bf"), 4.0, true)
+				_static_layer.draw_line(c - tangent * 8.0 + normal * 2.0, c + tangent * 8.0 + normal * 2.0, Color("af8d7e", 0.45), 1.0, true)
+	for point in points:
+		_static_layer.draw_colored_polygon(PackedVector2Array([point + Vector2(-17,-17),point + Vector2(17,-17),point + Vector2(17,17),point + Vector2(-17,17)]), Color("dcb399"))
 
 
-func _draw_gate(center: Vector2, color: Color, is_exit: bool) -> void:
-	draw_circle(center, 13.0, Color("182420", 0.9))
-	draw_arc(center, 12.0, 0.0, TAU, 36, color, 2.5, true)
-	draw_arc(center, 6.0, 0.0, TAU, 24, Color("f1dfb5", 0.8), 1.0, true)
-	if is_exit:
-		var point: PackedVector2Array = PackedVector2Array([
-			center + Vector2(0.0, -3.0),
-			center + Vector2(4.0, 0.0),
-			center + Vector2(0.0, 3.0),
-			center + Vector2(-4.0, 0.0)
-		])
-		draw_colored_polygon(point, color)
-	else:
-		draw_line(center + Vector2(-3.0, 0.0), center + Vector2(3.0, 0.0), color, 2.0, true)
-		draw_line(center + Vector2(0.0, -3.0), center + Vector2(0.0, 3.0), color, 2.0, true)
+func _draw_selection(center: Vector2) -> void:
+	var pulse: float = 0.5 + 0.5 * sin(_clock * 4.0)
+	for sign_x in [-1.0, 1.0]:
+		for sign_y in [-1.0, 1.0]:
+			var corner: Vector2 = center + Vector2(sign_x, sign_y) * (25.0 + pulse)
+			draw_polyline(PackedVector2Array([corner - Vector2(sign_x * 9.0, 0), corner, corner - Vector2(0, sign_y * 9.0)]), Color("714a93"), 3.5, true)
 
 
-func _draw_build_slots() -> void:
-	for slot in slots:
-		var slot_id: int = int(slot["id"])
-		var center: Vector2 = _world_to_screen(slot["position"])
-		var occupied: bool = not String(slot.get("tower_id", "")).is_empty()
-		_draw_build_site(center, slot_id == selected_slot, occupied)
-		if occupied:
-			draw_texture_rect(RAPID_TOWER, Rect2(center - Vector2(25.0, 25.0), Vector2(50.0, 50.0)), false)
+func _draw_tower(center: Vector2, id: int) -> void:
+	var age: float = float(_build_age.get(id, 1.0))
+	var scale_factor: float = 1.0
+	if age < 0.45:
+		scale_factor = lerpf(0.35, 1.0, ease(clampf(age / 0.45, 0.0, 1.0), 0.3))
+	_stamp(TOWER_BASE, center, 68.0 * scale_factor)
+	var angle: float = float(_angles.get(id, -0.4))
+	var recoil_age: float = float(_recoil.get(id, 10.0))
+	var kick: float = maxf(0.0, 1.0 - recoil_age / 0.16) * 4.5
+	draw_set_transform(center - Vector2.RIGHT.rotated(angle) * kick, angle, Vector2.ONE * scale_factor)
+	_stamp(TURRET, Vector2.ZERO, 68.0)
+	if recoil_age < 0.085:
+		for y in [-5.0, 5.0]:
+			draw_colored_polygon(PackedVector2Array([Vector2(21,y-4),Vector2(37,y),Vector2(23,y+5),Vector2(28,y)]), Color("fff3bd"))
+			draw_line(Vector2(24,y), Vector2(39,y), Color("df99ff", 0.7), 2.0, true)
+	draw_set_transform(Vector2.ZERO)
 
 
-func _draw_build_site(center: Vector2, is_selected: bool, is_occupied: bool) -> void:
-	var brass: Color = Color("e6b35c") if is_selected else Color("bd9a61")
-	var teal: Color = Color("80e2c7")
-	if is_selected:
-		draw_circle(center, 27.0, Color("e6b35c", 0.14))
-		draw_arc(center, 25.0, 0.0, TAU, 48, Color("f5ca75", 0.9), 2.0, true)
-	draw_circle(center + Vector2(0.0, 2.0), 20.0, Color("101816", 0.84))
-	draw_circle(center, 17.0, Color("29312c"))
-	draw_arc(center, 18.5, 0.0, TAU, 40, brass, 1.5 if not is_selected else 2.5, true)
-	draw_arc(center, 14.0, 0.2, 2.0, 24, Color("dfc18b", 0.72), 1.0, true)
-	for stud in [Vector2(-11.0, -11.0), Vector2(11.0, -11.0), Vector2(11.0, 11.0), Vector2(-11.0, 11.0)]:
-		draw_circle(center + stud, 1.5, Color("c7aa74"))
-	if not is_occupied:
-		var crystal: PackedVector2Array = PackedVector2Array([
-			center + Vector2(0.0, -4.0),
-			center + Vector2(4.0, 0.0),
-			center + Vector2(0.0, 4.0),
-			center + Vector2(-4.0, 0.0)
-		])
-		draw_colored_polygon(crystal, teal)
-		draw_circle(center, 1.5, Color("efffea"))
+func _draw_enemy(enemy: Dictionary) -> void:
+	var id: int = int(enemy["id"])
+	var position: Vector2 = enemy["position"]
+	var old: Vector2 = _previous_positions.get(id, position)
+	var t: float = clampf(_snapshot_age / 0.1, 0.0, 1.0)
+	var center: Vector2 = _world_to_screen(old.lerp(position, t))
+	var direction: Vector2 = position - old
+	var angle: float = direction.angle() if direction.length_squared() > 0.000001 else float(_angles.get("enemy_%d" % id, 0.0))
+	_angles["enemy_%d" % id] = angle
+	# Gait follows actual travelled distance, so stationary enemies cannot walk in place.
+	var gait: float = float(enemy["distance"]) * 19.0 - (1.0 - t) * direction.length() * 19.0
+	draw_set_transform(center, angle)
+	draw_ellipse_shadow(Vector2(1.0, 4.0), Vector2(20.0, 13.0))
+	for side in [-1.0, 1.0]:
+		for leg in range(3):
+			var step: float = sin(gait + leg * 2.1 + side * PI * 0.5)
+			var root: Vector2 = Vector2(-10.0 + leg * 8.0, side * 6.0)
+			var knee: Vector2 = Vector2(-14.0 + leg * 11.0 + step * 3.5, side * 16.0)
+			var foot: Vector2 = knee + Vector2(-7.0 + step * 4.0, side * (5.0 - step * 2.0))
+			_draw_limb(root, knee, 5.0, Color("533547"))
+			_draw_limb(knee, foot, 3.0, Color("533547"))
+			draw_line(root, knee, Color("b86459"), 3.5, true)
+			draw_line(knee, foot, Color("815067"), 2.0, true)
+	var bob: float = sin(gait * 2.0) * 0.8
+	var flash: float = maxf(0.0, 1.0 - float(_hit_age.get(id, 1.0)) / 0.15)
+	_stamp(MITE, Vector2(0,bob), 49.0, Color.WHITE.lerp(Color("ffe8c1"), flash * 0.65))
+	draw_set_transform(Vector2.ZERO)
+	var ratio: float = clampf(float(enemy["health"]) / maxf(1.0, float(enemy["maximum_health"])), 0.0, 1.0)
+	draw_rect(Rect2(center + Vector2(-17,-29), Vector2(34,6)), Color("4e3b50"))
+	draw_rect(Rect2(center + Vector2(-15,-27), Vector2(30 * ratio,2)), Color("ffb966"))
 
 
-func _draw_enemies() -> void:
-	for enemy in enemies:
-		var center: Vector2 = _world_to_screen(enemy["position"])
-		var maximum_health: float = maxf(float(enemy["maximum_health"]), 1.0)
-		var health_ratio: float = clampf(float(enemy["health"]) / maximum_health, 0.0, 1.0)
-		draw_circle(center + Vector2(0.0, 9.0), 13.0, Color(0.02, 0.025, 0.02, 0.4))
-		draw_texture_rect(CINDER_MITE, Rect2(center - Vector2(19.0, 19.0), Vector2(38.0, 38.0)), false)
-		var bar_rect: Rect2 = Rect2(center + Vector2(-13.0, -24.0), Vector2(26.0, 4.0))
-		draw_rect(bar_rect, Color("241c17"))
-		draw_rect(Rect2(bar_rect.position, Vector2(bar_rect.size.x * health_ratio, bar_rect.size.y)), Color("f0a04c"))
+func _draw_limb(start: Vector2, finish: Vector2, width: float, color: Color) -> void:
+	var direction: Vector2 = (finish - start).normalized()
+	var normal: Vector2 = Vector2(-direction.y, direction.x) * width * 0.5
+	draw_colored_polygon(PackedVector2Array([start - normal, finish - normal * 0.55, finish + normal * 0.55, start + normal]), color)
+
+
+func draw_ellipse_shadow(center: Vector2, radii: Vector2) -> void:
+	var points: PackedVector2Array = PackedVector2Array()
+	for index in range(16):
+		points.append(center + Vector2(cos(index * TAU / 16.0), sin(index * TAU / 16.0)) * radii)
+	draw_colored_polygon(points, Color(0.23,0.13,0.24,0.2))
+
+
+func _draw_gates() -> void:
+	if route.size() < 2:
+		return
+	var exit: Vector2 = _world_to_screen(route.back())
+	var pulse: float = 0.5 + 0.5 * sin(_clock * 2.3)
+	draw_ellipse_shadow(exit + Vector2(0,4), Vector2(31.0 + pulse * 3.0,20.0))
+	_stamp(CORE, exit + Vector2(0,-5.0 - pulse * 2.0), 74.0, Color.WHITE.lerp(Color("ffc5af"), maxf(0.0,1.0-_core_hit_age / 0.3)))
+	_stamp(PORTAL, _world_to_screen(route.front()) + Vector2(-12,-3), 68.0)
+	for index in range(4):
+		var phase: float = fmod(_clock * 0.35 + index * 0.25, 1.0)
+		var point: Vector2 = exit + Vector2(sin(_clock + index * 2) * 17.0, -phase * 45.0)
+		var alpha: float = sin(phase * PI) * 0.6
+		draw_colored_polygon(PackedVector2Array([point+Vector2(0,-3),point+Vector2(2,0),point+Vector2(0,3),point+Vector2(-2,0)]), Color(0.64,0.36,0.85,alpha))
+
+
+func _draw_effects() -> void:
+	for effect in _effects:
+		var center: Vector2 = _world_to_screen(effect["position"])
+		var progress: float = float(effect["age"]) / float(effect["duration"])
+		var alpha: float = 1.0 - progress
+		match String(effect["kind"]):
+			"shot":
+				var target: Vector2 = _world_to_screen(effect["target"])
+				var direction: Vector2 = (target - center).normalized()
+				# Short-lived tracer only. Damage is already resolved by the simulation.
+				draw_line(center + direction * 23.0, target, Color(0.72,0.41,0.95,alpha * 0.65), 2.0, true)
+				for index in range(3):
+					var point: Vector2 = target + Vector2.RIGHT.rotated(index * TAU / 3.0) * progress * 12.0
+					draw_line(point, point + Vector2(2,-3), Color(1.0,0.88,0.62,alpha), 2.0, true)
+			"death":
+				for index in range(7):
+					var offset: Vector2 = Vector2.RIGHT.rotated(index * 2.4) * (6.0 + progress * 24.0)
+					var point: Vector2 = center + offset + Vector2(0,progress * progress * 10.0)
+					draw_colored_polygon(PackedVector2Array([point+Vector2(-3,-2),point+Vector2(3,-3),point+Vector2(2,3),point+Vector2(-2,2)]), Color(0.55,0.26,0.31,alpha))
+			"spawn", "leak":
+				for index in range(4):
+					var point: Vector2 = center + Vector2.RIGHT.rotated(index * PI * 0.5) * progress * 18.0
+					draw_line(point, point + Vector2(0,-6), Color(0.67,0.4,0.86,alpha), 2.0, true)
 
 
 func _gui_input(event: InputEvent) -> void:

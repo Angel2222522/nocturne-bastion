@@ -39,3 +39,10 @@
 - Ακριβείς κανόνες επίθεσης/απωλειών πολεμιστών, στόχευσης ιπτάμενων και bosses.
 - Επιστροφές χρυσού από πώληση/ακύρωση πύργου.
 - Αποθήκευση προόδου και μενού εκστρατείας — δεν χρειάζονται στο πρώτο playable.
+
+
+## ADR-006 — Open mineral battlefield and read-only animation adapter
+
+Presentation uses an edge-decorated open terrain texture, route-derived paving, small replaceable layered SVG assets and a compact top/bottom HUD. All 28 positions and the route remain unchanged. `BattlePresenter` reads actual enemy health/lifecycle and tower cooldown changes; it never changes battle rules. The `BoardView` interpolates positions between 0.1 s snapshots, animates individual legs from travelled distance, rotates the separate turret and plays transient recoil/flash/impact/build/death effects. Static road/terrain are drawn by a cached separate CanvasItem. Effects and previous entity state are bounded and removed. Cosmetic tracer destination is inferred from actually damaged in-range enemies; it is not a combat event API and should be replaced with explicit optional combat telemetry if simultaneous target-specific projectile visuals are added later. Damage remains instant.
+
+Preview CI is required and precedes export. Design branches produce screenshots and real gameplay video without APK; main exports after a reviewed design checkpoint.

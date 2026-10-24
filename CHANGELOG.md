@@ -1,3 +1,11 @@
+# 0.2.0 / Android code 3 — 2026-10-24
+
+- Open mineral valley battlefield; full-width map, compact Greek HUD and contextual build button.
+- Original layered vector structures and animated insect legs, turret aim/recoil/flash, hit/death/build/core effects.
+- Read-only animation adapter; deterministic combat and all original gameplay data preserved.
+- Required CI screenshots/video before APK export; design branch preview-only gate.
+- Temporary per-run debug signing remains: uninstall previous debug version may be required. Physical Android performance/install not verified.
+
 # Changelog
 
 ## 0.1.1 (build 2) — 2026-10-24
