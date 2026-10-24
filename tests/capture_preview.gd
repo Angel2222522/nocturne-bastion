@@ -76,16 +76,19 @@ func _capture_gameplay_frame() -> void:
 	game_screen.call("_on_wave_pressed")
 	if not _require(simulation.phase == "active" and simulation.wave_index == 4, "Capture fixture could not start wave five from the game control"):
 		return
-	await create_timer(8.0).timeout
-	var empty_screen_wait: float = 0.0
-	while simulation.phase == "active" and simulation.enemies.is_empty() and empty_screen_wait < 5.0:
-		await create_timer(0.2).timeout
-		empty_screen_wait += 0.2
+	# Step the real simulation until its first surviving enemy, then freeze the frame for evidence.
+	game_screen.set_process(false)
+	var screenshot_steps: int = 0
+	while simulation.phase == "active" and simulation.enemies.is_empty() and screenshot_steps < 20:
+		simulation.tick(0.1)
+		screenshot_steps += 1
 	await RenderingServer.frame_post_draw
 	if not _require(simulation.phase == "active" and simulation.wave_index == 4, "Capture must show an active real fifth wave"):
 		return
 	if not _require(not simulation.enemies.is_empty(), "Capture must include live gameplay enemies"):
 		return
+	board.set_snapshot(presenter.capture(simulation))
+	await RenderingServer.frame_post_draw
 	var output_path: String = ProjectSettings.globalize_path("res://build/PULSE-preview.png")
 	DirAccess.make_dir_recursive_absolute(output_path.get_base_dir())
 	var save_error: Error = root.get_texture().get_image().save_png(output_path)
@@ -98,8 +101,16 @@ func _capture_gameplay_frame() -> void:
 	if not _require(small_error == OK, "Small-phone screenshot must save successfully"):
 		return
 	root.size = PREVIEW_SIZE
-	await create_timer(maxf(0.0, 17.0 - empty_screen_wait)).timeout
+	await process_frame
 	var counts: Dictionary = board.get("animation_counts")
+	for kind in counts.keys():
+		counts[kind] = 0
+	counts["build"] = build_events
+	counts["upgrade"] = upgrade_events
+	board.set("animation_counts", counts)
+	game_screen.set_process(true)
+	await create_timer(25.0).timeout
+	counts = board.get("animation_counts")
 	print("Captured battle animation events: ", JSON.stringify(counts))
 	var winged_spawned: bool = int(simulation.spawned_by_enemy.get("winged", 0)) > 0
 	if not _require(winged_spawned, "Real gameplay capture must reach the configured flying-enemy entry"):
