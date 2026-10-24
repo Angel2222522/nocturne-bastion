@@ -91,7 +91,7 @@ jobs:
         run: |
           mkdir -p build
           command -v ffmpeg >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y ffmpeg)
-          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --fixed-fps 30 --write-movie build/PULSE-gameplay.avi --script res://tests/capture_preview.gd
+          xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --fixed-fps 20 --write-movie build/PULSE-gameplay.avi --script res://tests/capture_preview.gd
           test -s build/PULSE-preview.png
           test -s build/visual-verification.json
           ffmpeg -y -loglevel error -i build/PULSE-gameplay.avi -c:v libx264 -preset fast -crf 22 -pix_fmt yuv420p -movflags +faststart -an build/PULSE-gameplay.mp4

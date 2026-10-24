@@ -70,7 +70,7 @@ func _capture_gameplay_frame() -> void:
 	var small_error: Error = root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://build/PULSE-small-preview.png"))
 	assert(small_error == OK, "Small-phone screenshot must save successfully")
 	root.size = PREVIEW_SIZE
-	await create_timer(12.0).timeout
+	await create_timer(5.0).timeout
 	var counts: Dictionary = board.get("animation_counts")
 	var winged_spawned: bool = int(simulation.spawned_by_enemy.get("winged", 0)) > 0
 	assert(winged_spawned, "Real gameplay capture must reach the configured flying-enemy entry")
