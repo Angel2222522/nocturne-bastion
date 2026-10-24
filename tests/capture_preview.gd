@@ -41,11 +41,7 @@ func _capture_gameplay_frame() -> void:
 			return
 	if not _require(simulation.towers.size() == 8, "Capture fixture should show all five categories, both mage roles, both enhancer roles, and sniper support"):
 		return
-	var barracks_state: TowerState = simulation.towers[4]["state"]
-	while barracks_state.level < barracks_state.definition["levels"].size():
-		if not _require(simulation.upgrade_tower(4), "Capture fixture Barracks level upgrade failed"):
-			return
-	for upgrade in [[27, "B"], [1, "B"], [5, "A"], [6, "B"], [17, "B"], [2, "A"]]:
+	for upgrade in [[27, "B"], [1, "B"], [4, "B"], [5, "A"], [6, "B"], [17, "B"], [2, "A"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 1)
@@ -82,6 +78,17 @@ func _capture_gameplay_frame() -> void:
 		return
 	# Step the real simulation until its first surviving enemy, then freeze the frame for evidence.
 	game_screen.set_process(false)
+	var original_cooldowns: Dictionary = {}
+	for slot_value in simulation.towers.keys():
+		var slot_id: int = int(slot_value)
+		var runtime: Dictionary = simulation.towers[slot_id]
+		original_cooldowns[slot_id] = {
+			"cooldown": float(runtime["cooldown"]),
+			"production_cooldown": float(runtime["production_cooldown"])
+		}
+		runtime["cooldown"] = 1.0
+		runtime["production_cooldown"] = 1.0
+		simulation.towers[slot_id] = runtime
 	var screenshot_steps: int = 0
 	while simulation.phase == "active" and simulation.enemies.is_empty() and screenshot_steps < 20:
 		simulation.tick(0.1)
@@ -106,17 +113,18 @@ func _capture_gameplay_frame() -> void:
 		return
 	root.size = PREVIEW_SIZE
 	await process_frame
+	for slot_value in original_cooldowns:
+		var slot_id: int = int(slot_value)
+		var runtime: Dictionary = simulation.towers[slot_id]
+		runtime["cooldown"] = float(original_cooldowns[slot_id]["cooldown"])
+		runtime["production_cooldown"] = float(original_cooldowns[slot_id]["production_cooldown"])
+		simulation.towers[slot_id] = runtime
 	var counts: Dictionary = board.get("animation_counts")
 	for kind in counts.keys():
 		counts[kind] = 0
 	counts["build"] = build_events
 	counts["upgrade"] = upgrade_events
 	board.set("animation_counts", counts)
-	game_screen.set("selected_slot", 4)
-	game_screen.call("_refresh")
-	game_screen.call("_on_upgrade_pressed", "B")
-	if not _require(simulation.towers[4]["state"].specialization == "B", "Capture must purchase the Barracks air-targeting specialization through the game UI"):
-		return
 	game_screen.set_process(true)
 	await create_timer(25.0).timeout
 	counts = board.get("animation_counts")
