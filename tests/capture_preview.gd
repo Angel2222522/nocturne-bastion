@@ -12,9 +12,9 @@ func _initialize() -> void:
 	_watchdog = Timer.new()
 	_watchdog.wait_time = 40.0
 	_watchdog.one_shot = true
+	_watchdog.autostart = true
 	_watchdog.timeout.connect(_on_watchdog_timeout)
 	root.add_child(_watchdog)
-	_watchdog.start()
 	call_deferred("_capture_gameplay_frame")
 
 
@@ -26,27 +26,30 @@ func _capture_gameplay_frame() -> void:
 	var simulation: BattleSimulation = game_screen.get("simulation")
 	# Fixture budget lets the evidence run exercise all temporary categories in one real match.
 	simulation.wallet.gold = 25000
-	for index in range(TOWER_IDS.size()):
-		game_screen.call("_on_tower_type_pressed", TOWER_IDS[index])
-		game_screen.call("_on_build_slot_pressed", index)
-	var extra_towers: Array[Dictionary] = [
-		{"slot": 5, "tower": "mage"}, {"slot": 6, "tower": "enhancer"},
-		{"slot": 8, "tower": "rapid"}
+	var fixture_towers: Array[Dictionary] = [
+		{"slot": 27, "tower": "rapid"}, {"slot": 1, "tower": "nuclear"},
+		{"slot": 2, "tower": "barracks"}, {"slot": 18, "tower": "mage"},
+		{"slot": 4, "tower": "enhancer"}, {"slot": 0, "tower": "mage"},
+		{"slot": 6, "tower": "enhancer"}, {"slot": 8, "tower": "rapid"}
 	]
-	for entry in extra_towers:
-		if not _require(simulation.request_build(int(entry["slot"]), String(entry["tower"])), "Capture fixture tower purchase failed"):
+	for entry in fixture_towers:
+		var slot_id: int = int(entry["slot"])
+		var tower_id: String = String(entry["tower"])
+		game_screen.call("_on_tower_type_pressed", tower_id)
+		game_screen.call("_on_build_slot_pressed", slot_id)
+		if not _require(simulation.towers.has(slot_id), "Capture fixture tower purchase failed for %s" % tower_id):
 			return
 	if not _require(simulation.towers.size() == 8, "Capture fixture should show all five categories, both mage roles, both enhancer roles, and sniper support"):
 		return
-	for upgrade in [[0, "B"], [1, "B"], [2, "B"], [3, "A"], [4, "B"], [5, "B"], [6, "A"]]:
+	for upgrade in [[27, "B"], [1, "B"], [2, "B"], [18, "A"], [4, "B"], [0, "B"], [6, "A"]]:
 		if not _upgrade_branch(simulation, int(upgrade[0]), String(upgrade[1])):
 			return
 	game_screen.set("selected_slot", 1)
 	game_screen.get("board").call("set_selected_slot", 1)
 	game_screen.call("_refresh")
 	var presenter: BattlePresenter = game_screen.get("presenter")
-	# Advance the actual match through waves one to three; tower and enemy rules remain the same.
-	for target_wave in range(3):
+	# Advance the actual match through waves one to four; wave five stays live for the recording.
+	for target_wave in range(4):
 		if not _require(simulation.start_wave(), "Capture fixture could not start configured wave %d" % (target_wave + 1)):
 			return
 		var safety_steps: int = 0
@@ -71,11 +74,11 @@ func _capture_gameplay_frame() -> void:
 	animation_counts["upgrade"] = upgrade_events
 	board.set("animation_counts", animation_counts)
 	game_screen.call("_on_wave_pressed")
-	if not _require(simulation.phase == "active" and simulation.wave_index == 3, "Capture fixture could not start wave four from the game control"):
+	if not _require(simulation.phase == "active" and simulation.wave_index == 4, "Capture fixture could not start wave five from the game control"):
 		return
 	await create_timer(15.0).timeout
 	await RenderingServer.frame_post_draw
-	if not _require(simulation.phase == "active" and simulation.wave_index == 3, "Capture must show an active real fourth wave"):
+	if not _require(simulation.phase == "active" and simulation.wave_index == 4, "Capture must show an active real fifth wave"):
 		return
 	if not _require(not simulation.enemies.is_empty(), "Capture must include live gameplay enemies"):
 		return
@@ -91,7 +94,7 @@ func _capture_gameplay_frame() -> void:
 	if not _require(small_error == OK, "Small-phone screenshot must save successfully"):
 		return
 	root.size = PREVIEW_SIZE
-	await create_timer(5.0).timeout
+	await create_timer(10.0).timeout
 	var counts: Dictionary = board.get("animation_counts")
 	print("Captured battle animation events: ", JSON.stringify(counts))
 	var winged_spawned: bool = int(simulation.spawned_by_enemy.get("winged", 0)) > 0
@@ -113,14 +116,14 @@ func _capture_gameplay_frame() -> void:
 		"real_gameplay": true,
 		"fixture_gold": 25000,
 		"fixture_note": "Evidence-only starting budget; all combat and presentation came from the game simulation.",
-		"capture_wave": 4,
+		"capture_wave": 5,
 		"temporary_tower_categories": TOWER_IDS,
 		"animation_events": counts,
 		"gold_at_end": simulation.wallet.gold,
 		"phase_at_end": simulation.phase,
 		"towers": simulation.towers.size(),
 		"enemies_spawned": simulation.spawned_count,
-		"wave_four_spawned": simulation.wave_spawned_count,
+		"wave_five_spawned": simulation.wave_spawned_count,
 		"flying_enemy_seen": winged_spawned,
 		"screenshots": ["1280x720", "960x540"]
 	}
