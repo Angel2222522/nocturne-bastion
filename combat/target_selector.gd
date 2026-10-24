@@ -6,13 +6,16 @@ static func choose_most_advanced_in_range(
 	enemies: Array,
 	route: Array,
 	tower_position: Vector2,
-	attack_range: float
+	attack_range: float,
+	can_target_fliers: bool = true
 ) -> Variant:
 	var selected: Variant = null
 	var best_progress: float = -1.0
 	var range_squared: float = attack_range * attack_range
 	for enemy in enemies:
 		if not enemy.alive:
+			continue
+		if enemy.is_flying and not can_target_fliers:
 			continue
 		if tower_position.distance_squared_to(enemy.position_on(route)) > range_squared:
 			continue

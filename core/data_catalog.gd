@@ -2,12 +2,15 @@ class_name DataCatalog
 extends RefCounted
 
 var towers: Dictionary
+var battle_tuning: Dictionary
 var enemies: Dictionary
 var level: Dictionary
 var wave_config: Dictionary
 
 func _init() -> void:
-	towers = _read_json("res://data/towers.json").get("towers", {})
+	var tower_data: Dictionary = _read_json("res://data/towers.json")
+	towers = tower_data.get("towers", {})
+	battle_tuning = tower_data.get("battle_tuning", {})
 	enemies = _read_json("res://data/enemies.json").get("enemies", {})
 	level = _read_json("res://data/level_01.json")
 	wave_config = _read_json("res://data/waves.json")

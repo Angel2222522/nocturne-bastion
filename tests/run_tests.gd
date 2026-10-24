@@ -31,6 +31,9 @@ func _run() -> void:
 	_test_wallet_purchases_and_rewards()
 	_test_wave_spawn()
 	_test_level_data()
+	_test_all_playable_towers()
+	_test_enhancer_bonuses()
+	_test_specialized_combat_effects()
 	_test_playable_battle_and_victory()
 	_test_defeat_condition()
 	if failures == 0:
@@ -86,6 +89,11 @@ func _test_range_targeting() -> void:
 	_expect(
 		TargetSelectorScript.choose_most_advanced_in_range([out_of_range], route, Vector2.ZERO, 2.0) == null,
 		"Tower should not target enemies outside its range"
+	)
+	var winged: EnemyState = EnemyStateScript.new("winged", 3, {"health": 20.0, "speed": 1.0, "is_flying": true})
+	_expect(
+		TargetSelectorScript.choose_most_advanced_in_range([winged], route, Vector2.ZERO, 4.0, false) == null,
+		"Tower profiles that cannot target flying enemies should filter them out"
 	)
 
 
@@ -170,7 +178,138 @@ func _test_level_data() -> void:
 	_expect_approx(PathFollowerScript.total_length(route), 29.0, "Route should match its documented 29-unit length")
 	_expect(catalog.towers.size() == 5, "Data catalog should keep all five designed tower roles")
 	_expect(catalog.tower_definition("rapid")["prototype_enabled"], "Rapid tower should be enabled in prototype")
-	_expect(not catalog.tower_definition("mage")["prototype_enabled"], "Unimplemented tower should not be exposed as functional")
+	for tower_id in ["nuclear", "barracks", "mage", "enhancer"]:
+		_expect(catalog.tower_definition(tower_id)["prototype_enabled"], "%s should be functional in the playable prototype" % tower_id)
+	_expect(catalog.wave_config["waves"].size() == 5, "Playable prototype should contain five sequential waves")
+	_expect(catalog.enemies.size() == 4, "Temporary enemy roster should include four combat profiles")
+
+
+func _test_all_playable_towers() -> void:
+	var simulation: BattleSimulation = BattleSimulationScript.new()
+	simulation.wallet.gold = 20000
+	var tower_ids: Array[String] = ["rapid", "nuclear", "barracks", "mage", "enhancer"]
+	for index in range(tower_ids.size()):
+		_expect(simulation.request_build(index, tower_ids[index]), "%s should be purchasable at a free slot" % tower_ids[index])
+	for index in range(tower_ids.size()):
+		var slot: Dictionary = simulation.snapshot()["slots"][index]
+		_expect(String(slot["tower_id"]) == tower_ids[index], "Built category should be represented in the live game state")
+		_expect(not Dictionary(slot["stats"]).is_empty(), "Built category should expose active combat/economy stats")
+	_expect(not simulation.request_build(5, "unknown_tower"), "Unknown tower data must not create a build")
+	var mage_battle: BattleSimulation = BattleSimulationScript.new()
+	mage_battle.wallet.gold = 5000
+	mage_battle.request_build(0, "mage")
+	_expect(mage_battle.upgrade_tower(0), "Mage should purchase its next level")
+	_expect(mage_battle.upgrade_tower(0), "Mage should purchase its third level")
+	_expect(mage_battle.upgrade_tower(0, "A"), "Mage should purchase a specialization after its levels")
+	var mage_stats: Dictionary = mage_battle.snapshot()["slots"][0]["stats"]
+	_expect_approx(float(mage_stats["effect_duration"]), 20.0, "Mage A should extend its debuff duration")
+	var barracks_battle: BattleSimulation = BattleSimulationScript.new()
+	barracks_battle.wallet.gold = 5000
+	barracks_battle.request_build(0, "barracks")
+	barracks_battle.upgrade_tower(0)
+	barracks_battle.upgrade_tower(0)
+	barracks_battle.upgrade_tower(0, "B")
+	var barracks_stats: Dictionary = barracks_battle.snapshot()["slots"][0]["stats"]
+	_expect(bool(barracks_stats["can_attack_fliers"]), "Barracks B should enable attacks on flying enemies")
+	_expect_approx(float(barracks_stats["soldier_damage_multiplier"]), 1.5, "Barracks B should increase soldier damage")
+	var nuclear_battle: BattleSimulation = BattleSimulationScript.new()
+	nuclear_battle.wallet.gold = 15000
+	nuclear_battle.request_build(0, "nuclear")
+	nuclear_battle.upgrade_tower(0)
+	nuclear_battle.upgrade_tower(0)
+	nuclear_battle.upgrade_tower(0, "B")
+	var nuclear_stats: Dictionary = nuclear_battle.snapshot()["slots"][0]["stats"]
+	_expect_approx(float(nuclear_stats["global_damage_fraction"]), 0.1, "Nuclear B should apply an immediate global radiation fraction")
+	var rapid_battle: BattleSimulation = BattleSimulationScript.new()
+	rapid_battle.wallet.gold = 3000
+	rapid_battle.request_build(0, "rapid")
+	rapid_battle.upgrade_tower(0)
+	rapid_battle.upgrade_tower(0)
+	rapid_battle.upgrade_tower(0, "B")
+	_expect(String(rapid_battle.towers[0]["state"].specialization) == "B", "Rapid sniper branch should be a real in-match tower state")
+	_expect(float(rapid_battle.snapshot()["slots"][0]["stats"]["range"]) >= 900.0, "Rapid B should expose its global targeting range")
+	var soldiers_battle: BattleSimulation = BattleSimulationScript.new()
+	soldiers_battle.wallet.gold = 1000
+	soldiers_battle.request_build(0, "barracks")
+	_expect(soldiers_battle.start_wave(), "Barracks production should be testable during a live wave")
+	soldiers_battle.tick()
+	_expect(soldiers_battle.soldiers.size() >= 2, "Barracks should produce real soldier entities during combat")
+	var soldier_spawn_event: bool = false
+	for event in soldiers_battle.events_after(0):
+		if event["kind"] == "soldier_spawn":
+			soldier_spawn_event = true
+	_expect(soldier_spawn_event, "Soldier production should emit a connected presentation event")
+
+
+func _test_enhancer_bonuses() -> void:
+	var simulation: BattleSimulation = BattleSimulationScript.new()
+	simulation.wallet.gold = 5000
+	simulation.request_build(0, "rapid")
+	simulation.request_build(1, "enhancer")
+	var base_damage: float = float(simulation.snapshot()["slots"][0]["stats"]["damage"])
+	_expect(float(simulation.build_cost("nuclear")) < 1200.0, "Enhancer should reduce the nuclear purchase cost")
+	_expect(simulation.upgrade_tower(1, "B"), "Enhancer B should be a functional specialization")
+	simulation.elapsed_time = 30.0
+	var boosted_damage: float = float(simulation.snapshot()["slots"][0]["stats"]["damage"])
+	_expect(boosted_damage > base_damage, "Enhancer B should improve affected towers after its configured interval")
+	var economy: BattleSimulation = BattleSimulationScript.new()
+	economy.wallet.gold = 5000
+	economy.request_build(0, "enhancer")
+	economy.upgrade_tower(0, "A")
+	_expect_approx(economy._kill_reward_multiplier(), 1.5, "Enhancer A should increase kill gold by its configured fifty percent")
+
+
+func _test_specialized_combat_effects() -> void:
+	var nuclear: BattleSimulation = BattleSimulationScript.new()
+	nuclear.wallet.gold = 15000
+	nuclear.request_build(0, "nuclear")
+	nuclear.upgrade_tower(0)
+	nuclear.upgrade_tower(0)
+	nuclear.upgrade_tower(0, "B")
+	var blast_target: EnemyState = EnemyStateScript.new("armored", 100, nuclear.catalog.enemy_definition("armored"))
+	blast_target.path_distance = 4.5
+	var global_target: EnemyState = EnemyStateScript.new("raider", 101, nuclear.catalog.enemy_definition("raider"))
+	global_target.path_distance = 28.5
+	nuclear.enemies.append(blast_target)
+	nuclear.enemies.append(global_target)
+	_expect(nuclear.start_wave(), "Nuclear B should fire during an active wave")
+	nuclear.tick()
+	_expect(not blast_target.alive, "Nuclear B local explosion should resolve direct damage")
+	_expect_approx(global_target.health, 35.0, "Nuclear B should immediately damage a distant live enemy")
+	var saw_radiation: bool = false
+	for event in nuclear.events_after(0):
+		if event["kind"] == "radiation":
+			saw_radiation = true
+	_expect(saw_radiation, "Global radiation damage should create a real presentation event")
+	var mage_a: BattleSimulation = BattleSimulationScript.new()
+	mage_a.wallet.gold = 5000
+	mage_a.request_build(0, "mage")
+	mage_a.upgrade_tower(0)
+	mage_a.upgrade_tower(0)
+	mage_a.upgrade_tower(0, "A")
+	var debuffed_target: EnemyState = EnemyStateScript.new("armored", 100, mage_a.catalog.enemy_definition("armored"))
+	debuffed_target.path_distance = 4.5
+	mage_a.enemies.append(debuffed_target)
+	mage_a.start_wave()
+	mage_a.tick()
+	_expect_approx(float(debuffed_target.debuff.get("remaining", 0.0)), 20.0, "Mage A should apply a refreshed extended effect")
+	var mage_b: BattleSimulation = BattleSimulationScript.new()
+	mage_b.wallet.gold = 5000
+	mage_b.request_build(0, "mage")
+	mage_b.upgrade_tower(0)
+	mage_b.upgrade_tower(0)
+	mage_b.upgrade_tower(0, "B")
+	var knockback_target: EnemyState = EnemyStateScript.new("armored", 100, mage_b.catalog.enemy_definition("armored"))
+	knockback_target.path_distance = 4.5
+	mage_b.enemies.append(knockback_target)
+	mage_b.start_wave()
+	mage_b.tick()
+	_expect(knockback_target.path_distance < 3.9, "Mage B should push a surviving target backward along the route")
+	var saw_knockback: bool = false
+	for event in mage_b.events_after(0):
+		if event["kind"] == "knockback":
+			saw_knockback = true
+	_expect(saw_knockback, "Mage knockback should emit the event the board animates")
 
 
 func _test_playable_battle_and_victory() -> void:
@@ -179,17 +318,20 @@ func _test_playable_battle_and_victory() -> void:
 	for slot_id in range(simulation.build_slots.size()):
 		_expect(simulation.request_build(slot_id, "rapid"), "Prototype should allow building a rapid tower on each free slot")
 	_expect(not simulation.request_build(0, "rapid"), "Occupied build slot must reject duplicate construction")
-	_expect(not simulation.request_build(0, "mage"), "Unimplemented tower must reject construction")
-	_expect(simulation.start_wave(), "Wave should start from ready state")
-	for _step in range(1000):
-		if simulation.phase != "active":
-			break
-		simulation.tick()
+	var total_steps: int = 0
+	while simulation.phase != "won" and simulation.phase != "lost" and total_steps < 10000:
+		if simulation.phase in ["ready", "intermission"]:
+			_expect(simulation.start_wave(), "Next configured wave should start from the ready/intermission state")
+		for _step in range(10000):
+			if simulation.phase != "active" or total_steps >= 10000:
+				break
+			simulation.tick()
+			total_steps += 1
 	_expect(simulation.phase == "won", "Full tower defense should reach victory")
-	_expect(simulation.spawned_count == 8, "All eight wave enemies should spawn")
-	_expect(simulation.killed_count == 8, "Placed rapid towers should resolve damage and kills")
+	_expect(simulation.spawned_count == 77, "All five configured waves should spawn their complete enemy rosters")
+	_expect(simulation.killed_count == 77, "Placed rapid towers should defeat every enemy across the five waves")
 	_expect(simulation.leaked_count == 0, "Full test defense should prevent leaks")
-	_expect(simulation.wallet.gold >= 10000 - 28 * 100 + 8 * 16 + 30, "Kills and clear bonus should enter the economy")
+	_expect(simulation.wallet.gold >= 10000 - 28 * 100 + 8 * 16 + 5 * 30, "Kills and each clear bonus should enter the economy")
 
 
 func _test_defeat_condition() -> void:

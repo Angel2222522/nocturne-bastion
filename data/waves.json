@@ -1,13 +1,52 @@
 {
-  "status": "provisional_prototype_data",
+  "status": "provisional_playable_wave_set",
+  "source_status": "Five-wave sequence and encounter counts are temporary values for the playable prototype. No boss identity or rule is implied.",
   "initial_gold": 320,
   "initial_lives": 25,
   "wave_clear_bonus": 30,
   "waves": [
     {
       "id": "wave_1",
+      "display_name": "Πρώτη επαφή",
       "entries": [
-        { "enemy_id": "test_raider", "count": 8, "spawn_interval": 2.65 }
+        { "enemy_id": "raider", "count": 8, "spawn_interval": 1.7 }
+      ]
+    },
+    {
+      "id": "wave_2",
+      "display_name": "Γρήγορη πίεση",
+      "entries": [
+        { "enemy_id": "raider", "count": 6, "spawn_interval": 1.25 },
+        { "enemy_id": "runner", "count": 4, "spawn_interval": 0.95 }
+      ]
+    },
+    {
+      "id": "wave_3",
+      "display_name": "Βαριά προέλαση",
+      "entries": [
+        { "enemy_id": "raider", "count": 6, "spawn_interval": 1.15 },
+        { "enemy_id": "runner", "count": 6, "spawn_interval": 0.85 },
+        { "enemy_id": "armored", "count": 2, "spawn_interval": 1.4 }
+      ]
+    },
+    {
+      "id": "wave_4",
+      "display_name": "Απειλή από ψηλά",
+      "entries": [
+        { "enemy_id": "raider", "count": 8, "spawn_interval": 1.0 },
+        { "enemy_id": "runner", "count": 6, "spawn_interval": 0.75 },
+        { "enemy_id": "armored", "count": 3, "spawn_interval": 1.25 },
+        { "enemy_id": "winged", "count": 3, "spawn_interval": 0.9 }
+      ]
+    },
+    {
+      "id": "wave_5",
+      "display_name": "Τελική επίθεση",
+      "entries": [
+        { "enemy_id": "raider", "count": 8, "spawn_interval": 0.85 },
+        { "enemy_id": "runner", "count": 8, "spawn_interval": 0.7 },
+        { "enemy_id": "armored", "count": 5, "spawn_interval": 1.1 },
+        { "enemy_id": "winged", "count": 4, "spawn_interval": 0.8 }
       ]
     }
   ]

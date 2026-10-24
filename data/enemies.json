@@ -1,17 +1,54 @@
 {
-  "status": "provisional_prototype_data",
-  "source": "PULSE mathematical model v0.2",
+  "status": "provisional_playable_roster",
+  "source_status": "Enemy identities and numerical tuning are temporary prototype choices, not approved final designs.",
   "enemies": {
-    "test_raider": {
-      "display_name": "Δοκιμαστικός αντίπαλος",
-      "approved_identity": false,
+    "raider": {
+      "display_name": "Επιδρομέας",
       "health": 110.0,
       "armor": 0.0,
       "speed": 0.85,
-      "attack_damage": 12.0,
+      "attack_damage": 8.0,
       "attack_interval": 1.2,
+      "attack_range": 1.45,
       "kill_gold": 16,
-      "core_damage": 1
+      "core_damage": 1,
+      "is_flying": false
+    },
+    "runner": {
+      "display_name": "Δρομέας",
+      "health": 64.0,
+      "armor": 0.0,
+      "speed": 1.5,
+      "attack_damage": 5.0,
+      "attack_interval": 0.9,
+      "attack_range": 1.2,
+      "kill_gold": 12,
+      "core_damage": 1,
+      "is_flying": false
+    },
+    "armored": {
+      "display_name": "Θωρακισμένος",
+      "health": 430.0,
+      "armor": 0.42,
+      "speed": 0.48,
+      "attack_damage": 20.0,
+      "attack_interval": 1.6,
+      "attack_range": 1.55,
+      "kill_gold": 55,
+      "core_damage": 2,
+      "is_flying": false
+    },
+    "winged": {
+      "display_name": "Φτερωτός",
+      "health": 88.0,
+      "armor": 0.0,
+      "speed": 1.2,
+      "attack_damage": 7.0,
+      "attack_interval": 1.0,
+      "attack_range": 1.4,
+      "kill_gold": 18,
+      "core_damage": 2,
+      "is_flying": true
     }
   }
 }

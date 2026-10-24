@@ -40,6 +40,16 @@ Presentation uses an edge-decorated open terrain texture, route-derived paving, 
 
 Preview CI is required and precedes export. Design branches produce screenshots and real gameplay video without APK; main exports after a reviewed design checkpoint.
 
+## ADR-008 — Playable multi-role milestone and event-driven visuals
+
+**Ημερομηνία:** 24/10/2026. **Πεδίο:** 0.3.0 candidate.
+
+**Απόφαση υλοποίησης:** τα πέντε προσχέδια γίνονται προσωρινά playable με κοινή αγορά/`TowerState`, κοινό selector/damage/status/wave/economy, δεδομένα `data/*.json` και μικρό αριθμημένο event log από τη `BattleSimulation`. Στρατιώτες είναι πραγματικές μονάδες που κινούνται και επιτίθενται. `BattlePresenter` καταναλώνει μόνο νέα events· `BoardView` ζωγραφίζει τα πέντε αρχέτυπα και τις αντίστοιχες αντιδράσεις. Οι τιμές/ερμηνείες είναι δηλωμένες προσωρινές, όχι έγκριση τελικού balance.
+
+**Γιατί:** η απλή παρουσία δεδομένων/βοηθητικών κλάσεων δεν έδινε παικτή εξέλιξη, κύματα ή αποδείξιμες οπτικές αντιδράσεις. Το event log συνδέει ακριβώς τις ολοκληρωμένες πράξεις μάχης με την εμφάνιση και κρατά simulation/headless checks ανεξάρτητα από το CanvasItem.
+
+**Ανοιχτά:** οι αυτόματες συνδέσεις, τελικά πλήθη/τιμές/στόχοι/αντεπιθέσεις, αεροπορικοί κανόνες και boss design. Δεν προστίθεται χειροκίνητη καλωδίωση, χάρτης zoom/pan ή αποθήκευση εκστρατείας σε αυτό το στάδιο.
+
 
 ## ADR-007 — Ενεργές προδιαγραφές και ιστορική προέλευση
 
