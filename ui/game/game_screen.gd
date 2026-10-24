@@ -62,7 +62,7 @@ func _build_interface() -> void:
 	header_row.add_child(title_column)
 	var title: Label = _label("PULSE", 25, Color("f3ecd9"), true)
 	title_column.add_child(title)
-	title_column.add_child(_label("ΑΜΥΝΑ ΠΥΡΗΝΑ  /  ΠΡΩΤΟΤΥΠΟ 0.1", 12, MUTED))
+	title_column.add_child(_label("ΑΜΥΝΑ ΠΥΡΗΝΑ  /  ΠΡΩΤΟΤΥΠΟ 0.1.1", 12, MUTED))
 	var spacer: Control = Control.new()
 	spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header_row.add_child(spacer)
