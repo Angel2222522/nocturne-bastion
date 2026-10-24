@@ -121,7 +121,7 @@ func _capture_gameplay_frame() -> void:
 	counts["upgrade"] = upgrade_events
 	board.set("animation_counts", counts)
 	game_screen.set_process(true)
-	await create_timer(20.0).timeout
+	await create_timer(15.0).timeout
 	print("Gameplay effects before heavy specializations: ", JSON.stringify(board.get("animation_counts")))
 	if not _require(int(board.get("animation_counts")["debuff"]) > 0,
 		"Mage A must apply its effect during the live battle"):
