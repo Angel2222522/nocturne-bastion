@@ -1,0 +1,38 @@
+{
+  "source_commit": "234f087e6b4f8bbda27258e020694f05cb54f164",
+  "workflow_run": 40072958632,
+  "version": "0.3.0",
+  "version_code": 4,
+  "previous_version": "0.2.0 / 3",
+  "package": "org.pulsegame.prototype",
+  "sha256": "cb2c595ae3d7a7abc3d7fa19272dc5ec4fdaffbf30c2fc73073909ae79674c86",
+  "size_bytes": 60008208,
+  "previous_certificate": "cf61d437b69635be44ef852c18144c26dfa32fe3bcb457af7a53117cda671e80",
+  "new_certificate": "9c81dac624d95eb4519a8fe47dc257eaf0b5128762b82cabb7f2146a34f7ba97",
+  "same_signing_key": false,
+  "signature_schemes_verified": ["v2", "v3"],
+  "offline_permission_check": true,
+  "landscape_feature_check": true,
+  "apk_zip_integrity": true,
+  "capture": {
+    "workflow_run": 40072958632,
+    "duration_seconds": 28.6,
+    "capture_wave": 5,
+    "wave_enemy_total": 25,
+    "wave_spawned": 25,
+    "fixture_gold": 25000,
+    "direct_start": true,
+    "phase_at_end": "won",
+    "screenshot_sizes": ["1280x720", "960x540"],
+    "animation_events": {
+      "blast": 3,
+      "debuff": 16,
+      "knockback": 1,
+      "radiation": 1,
+      "soldier_attack": 22,
+      "soldier_move": 181
+    }
+  },
+  "physical_device_tested": false,
+  "emulator_used": false
+}
