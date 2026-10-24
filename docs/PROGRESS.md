@@ -33,3 +33,14 @@
 - Commands: `godot --headless --editor --path . --quit`; `godot --headless --path . --script res://tests/run_tests.gd`; `godot --headless --path . --script res://tests/test_presentation.gd`; `xvfb-run -a env LIBGL_ALWAYS_SOFTWARE=1 godot --path . --fixed-fps 30 --write-movie build/PULSE-gameplay.avi --script res://tests/capture_preview.gd`.
 - CI: design/** pushes run tests and required gameplay/video capture only; main exports APK only after capture succeeds. Capture asserts active enemies and purchased towers, and nonzero shot/death animations.
 - Signing: temporary CI debug key per run; in-place upgrade from 0.1.1 is NOT guaranteed and uninstall may be required. No persistence/migration changes. Physical Android installation/performance not tested here.
+
+
+## Verification checkpoint — 24 Οκτωβρίου 2026 (Europe/Athens)
+
+- Saved design source: `design/mineral-valley-motion`, commit `ef667bbf5bf6877ae57abf4da0d5f74bd54a51b7`.
+- Preview-only GitHub Actions run `40062453371` passed. Imported Godot 4.7.2, original 88 checks, presentation regression, actual 24.067 s movie and screenshots 1280×720 / 960×540. Both screenshots visually inspected; no clipped Greek HUD. Adjacent movie frames inspected for leg/turret/core motion.
+- Capture report: 3 purchased towers, 8 spawned, 87 shots/hits, 5 death animations, gold 100 at clip end; no injected gold, enemy or tower state. Same battle baseline is preserved.
+- A runtime polygon triangulation defect in animated legs was corrected before this saved design checkpoint, and tower visual scale increased after screenshot inspection.
+- Core/combat/economy/data/enemies/towers/units/waves source unchanged. Static terrain native asset and vector art separated from rules.
+- Reviewed visual source advances to main for 0.2.0 / code 3. APK export/signature verification pending main CI. Generated capture/build assets explicitly excluded from Android package.
+- Not verified on physical Android: installation, vendor GPU frame rate and thermal behavior. No emulator used.
